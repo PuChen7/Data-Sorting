@@ -38,17 +38,27 @@ int main(int argc, char** argv){
           
            // Keep printing tokens while one of the
            // delimiters present in str[].
+        int attributesCount = 0;
         while (token != NULL)
            {
-               printf("%s\n", token);
-               token = strtok(NULL, ",");
-           }
+            if(token[strlen(token)-1] == '\n'){
+                //printf("line breaker\n");
+                token[strlen(token)-1]=0;//make it end of string         
+            }
+            
+            printf("%s\n", token);
 
+            token = strtok(NULL, ",");
+            attributesCount++;
+           }
+        printf("%d atr\n",attributesCount);
 		//printf("Field 1 would be %s\n", getfield(tmp, 1));
 		// NOTE strtok clobbers tmp
         free(tmp);
         free(token);
     }
     printf("%d lines",lineCounter);
+    printf("%d",strlen(""));
+
     return 0;
 }
