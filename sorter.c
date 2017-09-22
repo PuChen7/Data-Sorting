@@ -2,18 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#define sorter_header "sorter.h"
+#include sorter_header
 
-const char* getfield(char* line, int num)
-{
-	const char* tok;
-	for (tok = strtok(line, ",");
-			tok && *tok;
-			tok = strtok(NULL, ",\n"))
-	{
-		if (!--num)
-			return tok;
-	}
-	return NULL;
+void initArray(char** array,int arraySize,char* line){
+    char *token = strtok(line, ",");
+    int counter=0;
+    while (token != NULL && counter<arraySize)
+    {
+     if(token[strlen(token)-1] == '\n') token[strlen(token)-1]=0;      
+     array[counter]=token;
+     token = strtok(NULL, ",");
+     counter++;
+    }
 }
 
 int main(int argc, char** argv){
@@ -28,6 +29,8 @@ int main(int argc, char** argv){
 
     char line[1024];
     int lineCounter=0;
+    int attributesCount;
+    char* tempLine;
     while (fgets(line, 1024, stdin))
 	{
         lineCounter++;
@@ -35,30 +38,37 @@ int main(int argc, char** argv){
         
         // Returns first token 
         char *token = strtok(tmp, ",");
-          
-           // Keep printing tokens while one of the
-           // delimiters present in str[].
-        int attributesCount = 0;
+        if(lineCounter==1){
+            tempLine = strdup(line);
+        }
+           attributesCount = 0;
         while (token != NULL)
            {
             if(token[strlen(token)-1] == '\n'){
-                //printf("line breaker\n");
                 token[strlen(token)-1]=0;//make it end of string         
             }
-            
-            printf("%s\n", token);
+            printf("%s \n", token);
 
             token = strtok(NULL, ",");
             attributesCount++;
            }
-        printf("%d atr\n",attributesCount);
+        //printf("%d atr\n",attributesCount);
 		//printf("Field 1 would be %s\n", getfield(tmp, 1));
 		// NOTE strtok clobbers tmp
         free(tmp);
         free(token);
     }
-    printf("%d lines",lineCounter);
-    printf("%d",strlen(""));
+    
+    //may need to make sure attrCount are same for all string..
+    //or may not....
+    printf("%d lines ",lineCounter);
+    char* headerArray[attributesCount];
+    initArray(headerArray,attributesCount,tempLine);
 
+
+    printf("\n5th header is %s ",headerArray[4]);
+    free(tempLine);    
+    free(headerArray);
+    
     return 0;
 }
