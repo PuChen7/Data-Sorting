@@ -11,6 +11,30 @@ struct node{
     char **line_array;  // hold the entire row
 };
 
+char *strtok_single (char * str, char const * delims)
+{
+  static char  * src = NULL;
+  char * p,  * ret = 0;
+
+  if (str != NULL)
+    src = str;
+
+  if (src == NULL)
+    return NULL;
+
+  if ((p = strpbrk (src, delims)) != NULL) {
+    *p  = 0;
+    ret = src;
+    src = ++p;
+
+  } else if (*src) {
+    ret = src;
+    src = NULL;
+  }
+
+  return ret;
+}
+
 /* This array contains the first row of the csv file.
     It stores all the value types. */
 void initValueTypesArray(char** array,int arraySize,char* line){
@@ -38,7 +62,7 @@ int main(int argc, char** argv){
     struct node *prev = NULL;
 
     char line[1024];    // temp array for holding csv file lines.
-    int rowNumber=0;    // hold the number of lines of the csv file.
+    int rowNumber=-2;    // hold the number of lines of the csv file.
     int value_type_number;    // hold the number of value types(column numbers).
     char* headerLine;   // hold the first line of the csv file, which is the value types.
     int isFirstElement = 0; // mark the first element in LL
@@ -47,15 +71,17 @@ int main(int argc, char** argv){
         char* tmp = strdup(line);        
         // first row
         // Returns first token 
-        char *token = strtok(tmp, ",");
-        if(rowNumber==1){
+      
+      
+        char *token = strtok_single(tmp, ",");
+        if(rowNumber==-1){
             headerLine = strdup(line);
             value_type_number = 0;
             while (token != NULL){
                 if(token[strlen(token)-1] == '\n'){
                     token[strlen(token)-1]=0;//make it end of string         
                 }
-                token = strtok(NULL, ",");
+                token = strtok_single(NULL, ",");
                 value_type_number++;    // update the number of columns(value types).
             }
             continue;
@@ -64,6 +90,7 @@ int main(int argc, char** argv){
         /* malloc array for holding tokens.*/
         char** new_array = malloc(value_type_number * sizeof(char*));
 
+
         // using token to split each line.
         // store each token into corresponding array cell.
         int counter = 0;
@@ -71,13 +98,15 @@ int main(int argc, char** argv){
             if(token[strlen(token)-1] == '\n'){
                 token[strlen(token)-1]=0;//make it end of string         
             }
-            token = strtok(NULL, ",");
-            new_array[counter] = token; // store token into array
+            new_array[counter] = *token ? token : "<empty>"; // store token into array
+            printf("column %d : %s ",counter,token);
+            token = strtok_single(NULL, ",");
             counter++;
         }
 
 
         // create a new node
+        //rowNumber starts from 0
         struct node *temp = (struct node*) malloc(sizeof(struct node));
         temp-> marker = rowNumber;
         temp-> line_array = new_array;
