@@ -6,15 +6,12 @@
 
 int main(int argc, char** argv){
     
-    char delims[] = ",";
-    char data  [] = "foo,bar,,baz,biz";
-  
-    char * p    = strtok_single (data, delims);
-  
-    while (p) {
-      printf ("%s\n", *p ? p : "<empty>");
-  
-      p = strtok_single (NULL, delims);
-    }
+    char* array[2][4] = {{"abc","aba","bbc","dd"},{"abc","aba","bbc","dd"}};
+
+    array[0][0] = "aba";
+
+    printf("%d",strcmp(array[0][0],array[1][1]));
+
+
     return 0;
 }
