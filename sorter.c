@@ -194,6 +194,7 @@ int main(int argc, char** argv){
     }
 
     // check if the value is digits or string
+    // return 0 for false, non-zero for true.
     int numeric = isNumeric(sort_array[0].str);
 
     return 0;
