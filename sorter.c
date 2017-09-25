@@ -72,6 +72,71 @@ int isNumeric(char* str){
     return *p == '\0';
 }
 
+// helper function for sorting numbers
+void numMerge(SortArray* sort_array, int left, int middle, int right){
+    int i, j, k;
+    int n1 = middle - left + 1;
+    int n2 =  right - middle;
+    
+    // temporary arrays
+    SortArray *L;
+    L = (SortArray*) malloc(n1 * sizeof(SortArray));
+    SortArray *R;
+    R = (SortArray*) malloc(n2 * sizeof(SortArray));
+
+    // copy data into temporary arrays
+    for (i = 0; i < n1; i++){
+        L[i].str = sort_array[left + i].str;
+        L[i].index = sort_array[left + 1].index;
+    }
+    for (j = 0; j < n2; j++){
+        R[j].str = sort_array[middle + 1+ j].str;
+        R[j].index = sort_array[middle + 1 + j].index;
+    }
+
+    i = 0; 
+    j = 0; 
+    k = left;
+
+    while (i < n1 && j < n2) {
+        if (atoi(L[i].str) <= atoi(R[j].str)) {
+            sort_array[k].str = L[i].str;
+            sort_array[k].index = L[i].index;
+            i++;
+        }
+        else {
+            sort_array[k].str = R[j].str;
+            sort_array[k].index = R[j].index;
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        sort_array[k].str = L[i].str;
+        sort_array[k].index = L[i].index;
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        sort_array[k].str = R[j].str;
+        sort_array[k].index = R[j].index;
+        j++;
+        k++;
+    }
+}
+
+// function for sorting numbers
+void numMergeSort(SortArray* sort_array, int left, int right){
+    if (left < right){
+        int middle = left + (right - left) / 2;
+        numMergeSort(sort_array, left, middle);
+        numMergeSort(sort_array, middle+1, right);
+        numMerge(sort_array, left, middle, right);
+    }
+} 
+
 int main(int argc, char** argv){
     // check for command line input
     if (argc < 3){
@@ -180,7 +245,7 @@ int main(int argc, char** argv){
     }
     // the type is not found in the file. ERROR.
     if (isFound == 1){
-        printf("Error:The value type was not found in csv file!\n");
+        printf("Error: The value type was not found in csv file!\n");
         exit(0);
     }
 
@@ -197,5 +262,11 @@ int main(int argc, char** argv){
     // return 0 for false, non-zero for true.
     int numeric = isNumeric(sort_array[0].str);
 
+    // if the strign is a number
+    // sort based on the value of the number
+    if (numeric != 0){
+        numMergeSort(sort_array, 0, rowNumber-1); 
+    }
+    
     return 0;
 }
