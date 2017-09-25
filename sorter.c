@@ -63,6 +63,15 @@ void initDataArray(char* array[dataRow][dataCol],struct node * data){
     }
 }
 
+// check if a string is numeric, 0 -> false, non-zero -> true
+int isNumeric(char* str){
+    if (str == NULL || *str == '\0' || isspace(*str))
+      return 0;
+    char * p;
+    strtod (str, &p);
+    return *p == '\0';
+}
+
 int main(int argc, char** argv){
     // check for command line input
     if (argc < 3){
@@ -184,6 +193,8 @@ int main(int argc, char** argv){
         sort_array[count].str = dataArray[count][i];
     }
 
-    
+    // check if the value is digits or string
+    int numeric = isNumeric(sort_array[0].str);
+
     return 0;
 }
