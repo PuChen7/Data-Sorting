@@ -5,6 +5,8 @@
 #define sorter_header "sorter.h"
 #include sorter_header
 #include <ctype.h>
+#define EMPTY_STRING ""
+
 
 struct node{
     struct node *next;  // pointer points to the next row
@@ -125,6 +127,8 @@ void numMerge(SortArray* sort_array, int left, int middle, int right){
         j++;
         k++;
     }
+    free(L);
+    free(R);
 }
 
 // function for sorting numbers
@@ -137,6 +141,75 @@ void numMergeSort(SortArray* sort_array, int left, int right){
     }
 } 
 
+
+// helper function for sorting numbers
+void strMerge(SortArray* sort_array, int left, int middle, int right){
+    int i, j, k;
+    int n1 = middle - left + 1;
+    int n2 =  right - middle;
+    
+    // temporary arrays
+    SortArray *L;
+    L = (SortArray*) malloc(n1 * sizeof(SortArray));
+    SortArray *R;
+    R = (SortArray*) malloc(n2 * sizeof(SortArray));
+
+    // copy data into temporary arrays
+    for (i = 0; i < n1; i++){
+        L[i].str = sort_array[left + i].str;
+        L[i].index = sort_array[left + 1].index;
+    }
+    for (j = 0; j < n2; j++){
+        R[j].str = sort_array[middle + 1+ j].str;
+        R[j].index = sort_array[middle + 1 + j].index;
+    }
+
+    i = 0; 
+    j = 0; 
+    k = left;
+
+    while (i < n1 && j < n2) {
+        int emptyFlag = strcmp(L[i].str,EMPTY_STRING);
+        int cmpResult = strcmp(L[i].str,R[j].str);
+        if (cmpResult<=0) {
+            sort_array[k].str = L[i].str;
+            sort_array[k].index = L[i].index;
+            i++;
+        }
+        else {
+            sort_array[k].str = R[j].str;
+            sort_array[k].index = R[j].index;
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        sort_array[k].str = L[i].str;
+        sort_array[k].index = L[i].index;
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        sort_array[k].str = R[j].str;
+        sort_array[k].index = R[j].index;
+        j++;
+        k++;
+    }
+    free(L);
+    free(R);
+}
+
+// function for sorting numbers
+void strMergeSort(SortArray* sort_array, int left, int right){
+    if (left < right){
+        int middle = left + (right - left) / 2;
+        strMergeSort(sort_array, left, middle);
+        strMergeSort(sort_array, middle+1, right);
+        strMerge(sort_array, left, middle, right);
+    }
+} 
 int main(int argc, char** argv){
     // check for command line input
     if (argc < 3){
@@ -158,11 +231,10 @@ int main(int argc, char** argv){
     while (fgets(line, 1024, stdin)){
         rowNumber++;
         
-        char* tmp = strdup(line);        
+        char* tmp = strdup(line);  
+        
         // first row
         // Returns first token 
-      
-      
         char *token = strtok_single(tmp, ",");
         if(rowNumber==0){
             headerLine = strdup(line);
@@ -174,9 +246,12 @@ int main(int argc, char** argv){
                 token = strtok_single(NULL, ",");
                 value_type_number++;    // update the number of columns(value types).
             }
+            //printf("%d",value_type_number);            
             continue;
         }
 
+        printf("%s %d row\n",tmp,rowNumber);            
+        
         /* malloc array for holding tokens.*/
         char** new_array = malloc(value_type_number * sizeof(char*));
 
@@ -187,7 +262,7 @@ int main(int argc, char** argv){
             if(token[strlen(token)-1] == '\n'){
                 token[strlen(token)-1]=0;//make it end of string         
             }
-            new_array[counter] = *token ? token : "<empty>"; // store token into array
+            new_array[counter] = *token ? token : EMPTY_STRING; // store token into array
             token = strtok_single(NULL, ",");
             counter++;
         }
@@ -262,11 +337,17 @@ int main(int argc, char** argv){
     // return 0 for false, non-zero for true.
     int numeric = isNumeric(sort_array[0].str);
 
+    printf("before %s %s %s\n",sort_array[0],sort_array[1],sort_array[2]);
     // if the strign is a number
     // sort based on the value of the number
     if (numeric != 0){
         numMergeSort(sort_array, 0, rowNumber-1); 
     }
+    else{
+        strMergeSort(sort_array, 0, rowNumber-1); 
+    }
+    printf("after %s %s %s\n",sort_array[0],sort_array[1],sort_array[2]);
     
+
     return 0;
 }
