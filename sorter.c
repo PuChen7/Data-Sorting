@@ -75,7 +75,7 @@ int isNumeric(char* str){
 }
 
 // helper function for sorting numbers
-void Merge(SortArray* sort_array, int left, int middle, int right,int numeric){
+void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
     int i, j, k;
     int n1 = middle - left + 1;
     int n2 =  right - middle;
@@ -146,17 +146,16 @@ void Merge(SortArray* sort_array, int left, int middle, int right,int numeric){
 }
 
 // function for sorting numbers
-void MergeSort(SortArray* sort_array, int left, int right,int numeric){
+void mergeSort(SortArray* sort_array, int left, int right,int numeric){
     if (left < right){
         int middle = left + (right - left) / 2;
-        MergeSort(sort_array, left, middle,numeric);
-        MergeSort(sort_array, middle+1, right,numeric);
-        Merge(sort_array, left, middle, right,numeric);
+        mergeSort(sort_array, left, middle,numeric);
+        mergeSort(sort_array, middle+1, right,numeric);
+        merge(sort_array, left, middle, right,numeric);
     }
 } 
 
-char *trimwhitespace(char *str)
-{
+char *trimwhitespace(char *str) {
   char *end;
 
   // Trim leading space
@@ -193,6 +192,8 @@ int main(int argc, char** argv){
     int value_type_number;    // hold the number of value types(column numbers).
     char* headerLine;   // hold the first line of the csv file, which is the value types.
     int isFirstElement = 0; // mark the first element in LL
+
+    // loop for reading the csv file line by line.
     while (fgets(line, 1024, stdin)){
         rowNumber++;
         
@@ -211,11 +212,8 @@ int main(int argc, char** argv){
                 token = strtok_single(NULL, ",");
                 value_type_number++;    // update the number of columns(value types).
             }
-            //printf("%d",value_type_number);            
             continue;
         }
-
-        //printf("%s %d row\n",tmp,rowNumber);            
         
         /* malloc array for holding tokens.*/
         char** new_array = malloc(value_type_number * sizeof(char*));
@@ -250,8 +248,6 @@ int main(int argc, char** argv){
         prev = temp;
     }
     
-    //may need to make sure attrCount are same for all string..
-    //or may not....
     char* headerArray[value_type_number];   // this array hold the first row.
     initValueTypesArray(headerArray,value_type_number,headerLine);    
     
@@ -306,19 +302,15 @@ int main(int argc, char** argv){
 
     //printf("before %d %d %d\n",sort_array[0].index,sort_array[1].index,sort_array[2].index);
     
-    // if the strign is a number
-    // sort based on the value of the number
-    //numeric 0:false 1:true
-    MergeSort(sort_array, 0, rowNumber-1,numeric); 
-
-    //printf("after %d %d %d\n",sort_array[0].index,sort_array[1].index,sort_array[2].index);
+    // if the string is a number, then sort based on the value of the number
+    // NOTE: numeric 0:false 1:true
+    mergeSort(sort_array, 0, rowNumber-1,numeric); 
 
     count=0;
     for(;count<dataRow;count++){
         for(i=0;i<dataCol;i++){
-            i==(dataCol-1)?printf("%s",dataArray[sort_array[count].index][i]):printf("%s,",dataArray[sort_array[count].index][i]);
+            i==(dataCol-1)?printf("%s\n",dataArray[sort_array[count].index][i]):printf("%s\n",dataArray[sort_array[count].index][i]);
         }//end of line
-        printf("\n",count);
     }
     
 
