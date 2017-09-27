@@ -75,7 +75,7 @@ int isNumeric(char* str){
 }
 
 // helper function for sorting numbers
-void numMerge(SortArray* sort_array, int left, int middle, int right){
+void Merge(SortArray* sort_array, int left, int middle, int right,int numeric){
     int i, j, k;
     int n1 = middle - left + 1;
     int n2 =  right - middle;
@@ -89,7 +89,7 @@ void numMerge(SortArray* sort_array, int left, int middle, int right){
     // copy data into temporary arrays
     for (i = 0; i < n1; i++){
         L[i].str = sort_array[left + i].str;
-        L[i].index = sort_array[left + 1].index;
+        L[i].index = sort_array[left + i].index;
     }
     for (j = 0; j < n2; j++){
         R[j].str = sort_array[middle + 1+ j].str;
@@ -101,15 +101,30 @@ void numMerge(SortArray* sort_array, int left, int middle, int right){
     k = left;
 
     while (i < n1 && j < n2) {
-        if (atoi(L[i].str) <= atoi(R[j].str)) {
-            sort_array[k].str = L[i].str;
-            sort_array[k].index = L[i].index;
-            i++;
+        if(numeric==0){//if str
+            int cmpResult = strcmp(L[i].str,R[j].str);
+            if (cmpResult<=0) {
+                sort_array[k].str = L[i].str;
+                sort_array[k].index = L[i].index;
+                i++;
+            }
+            else {
+                sort_array[k].str = R[j].str;
+                sort_array[k].index = R[j].index;
+                j++;
+            }
         }
-        else {
-            sort_array[k].str = R[j].str;
-            sort_array[k].index = R[j].index;
-            j++;
+        else{//if numeric
+            if (atoi(L[i].str) <= atoi(R[j].str)) {
+                sort_array[k].str = L[i].str;
+                sort_array[k].index = L[i].index;
+                i++;
+            }
+            else {
+                sort_array[k].str = R[j].str;
+                sort_array[k].index = R[j].index;
+                j++;
+            }
         }
         k++;
     }
@@ -127,89 +142,39 @@ void numMerge(SortArray* sort_array, int left, int middle, int right){
         j++;
         k++;
     }
-    free(L);
-    free(R);
+
 }
 
 // function for sorting numbers
-void numMergeSort(SortArray* sort_array, int left, int right){
+void MergeSort(SortArray* sort_array, int left, int right,int numeric){
     if (left < right){
         int middle = left + (right - left) / 2;
-        numMergeSort(sort_array, left, middle);
-        numMergeSort(sort_array, middle+1, right);
-        numMerge(sort_array, left, middle, right);
+        MergeSort(sort_array, left, middle,numeric);
+        MergeSort(sort_array, middle+1, right,numeric);
+        Merge(sort_array, left, middle, right,numeric);
     }
 } 
 
+char *trimwhitespace(char *str)
+{
+  char *end;
 
-// helper function for sorting numbers
-void strMerge(SortArray* sort_array, int left, int middle, int right){
-    int i, j, k;
-    int n1 = middle - left + 1;
-    int n2 =  right - middle;
-    
-    // temporary arrays
-    SortArray *L;
-    L = (SortArray*) malloc(n1 * sizeof(SortArray));
-    SortArray *R;
-    R = (SortArray*) malloc(n2 * sizeof(SortArray));
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
 
-    // copy data into temporary arrays
-    for (i = 0; i < n1; i++){
-        L[i].str = sort_array[left + i].str;
-        L[i].index = sort_array[left + 1].index;
-    }
-    for (j = 0; j < n2; j++){
-        R[j].str = sort_array[middle + 1+ j].str;
-        R[j].index = sort_array[middle + 1 + j].index;
-    }
+  if(*str == 0)  // All spaces?
+    return str;
 
-    i = 0; 
-    j = 0; 
-    k = left;
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace((unsigned char)*end)) end--;
 
-    while (i < n1 && j < n2) {
-        int emptyFlag = strcmp(L[i].str,EMPTY_STRING);
-        int cmpResult = strcmp(L[i].str,R[j].str);
-        if (cmpResult<=0) {
-            sort_array[k].str = L[i].str;
-            sort_array[k].index = L[i].index;
-            i++;
-        }
-        else {
-            sort_array[k].str = R[j].str;
-            sort_array[k].index = R[j].index;
-            j++;
-        }
-        k++;
-    }
+  // Write new null terminator
+  *(end+1) = 0;
 
-    while (i < n1) {
-        sort_array[k].str = L[i].str;
-        sort_array[k].index = L[i].index;
-        i++;
-        k++;
-    }
-
-    while (j < n2) {
-        sort_array[k].str = R[j].str;
-        sort_array[k].index = R[j].index;
-        j++;
-        k++;
-    }
-    free(L);
-    free(R);
+  return str;
 }
 
-// function for sorting numbers
-void strMergeSort(SortArray* sort_array, int left, int right){
-    if (left < right){
-        int middle = left + (right - left) / 2;
-        strMergeSort(sort_array, left, middle);
-        strMergeSort(sort_array, middle+1, right);
-        strMerge(sort_array, left, middle, right);
-    }
-} 
 int main(int argc, char** argv){
     // check for command line input
     if (argc < 3){
@@ -250,7 +215,7 @@ int main(int argc, char** argv){
             continue;
         }
 
-        printf("%s %d row\n",tmp,rowNumber);            
+        //printf("%s %d row\n",tmp,rowNumber);            
         
         /* malloc array for holding tokens.*/
         char** new_array = malloc(value_type_number * sizeof(char*));
@@ -262,7 +227,8 @@ int main(int argc, char** argv){
             if(token[strlen(token)-1] == '\n'){
                 token[strlen(token)-1]=0;//make it end of string         
             }
-            new_array[counter] = *token ? token : EMPTY_STRING; // store token into array
+            
+            new_array[counter] = *token ? trimwhitespace(token) : EMPTY_STRING; // store token into array
             token = strtok_single(NULL, ",");
             counter++;
         }
@@ -329,6 +295,7 @@ int main(int argc, char** argv){
     sort_array = (SortArray*) malloc(rowNumber * sizeof(SortArray));
     int count = 0;
     for (; count < rowNumber; count++){
+        //printf("index %d and str %s \n",count,dataArray[count][i]);        
         sort_array[count].index = count;
         sort_array[count].str = dataArray[count][i];
     }
@@ -337,16 +304,22 @@ int main(int argc, char** argv){
     // return 0 for false, non-zero for true.
     int numeric = isNumeric(sort_array[0].str);
 
-    printf("before %s %s %s\n",sort_array[0],sort_array[1],sort_array[2]);
+    //printf("before %d %d %d\n",sort_array[0].index,sort_array[1].index,sort_array[2].index);
+    
     // if the strign is a number
     // sort based on the value of the number
-    if (numeric != 0){
-        numMergeSort(sort_array, 0, rowNumber-1); 
+    //numeric 0:false 1:true
+    MergeSort(sort_array, 0, rowNumber-1,numeric); 
+
+    //printf("after %d %d %d\n",sort_array[0].index,sort_array[1].index,sort_array[2].index);
+
+    count=0;
+    for(;count<dataRow;count++){
+        for(i=0;i<dataCol;i++){
+            i==(dataCol-1)?printf("%s",dataArray[sort_array[count].index][i]):printf("%s,",dataArray[sort_array[count].index][i]);
+        }//end of line
+        printf("\n",count);
     }
-    else{
-        strMergeSort(sort_array, 0, rowNumber-1); 
-    }
-    printf("after %s %s %s\n",sort_array[0],sort_array[1],sort_array[2]);
     
 
     return 0;
