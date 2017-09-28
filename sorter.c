@@ -309,7 +309,7 @@ int main(int argc, char** argv){
     count=0;
     for(;count<dataRow;count++){
         for(i=0;i<dataCol;i++){
-            i==(dataCol-1)?printf("%s\n",dataArray[sort_array[count].index][i]):printf("%s\n",dataArray[sort_array[count].index][i]);
+            i==(dataCol-1)?printf("%s\n",dataArray[sort_array[count].index][i]):printf("%s,",dataArray[sort_array[count].index][i]);
         }//end of line
     }
     
