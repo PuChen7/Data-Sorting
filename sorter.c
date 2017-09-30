@@ -221,11 +221,38 @@ int main(int argc, char** argv){
         // using token to split each line.
         // store each token into corresponding array cell.
         int counter = 0;
+
+        //variables in order to keep tracking of cells that contains , value
+        int headerDoubleQuotes = 0;
+        int tailerDoubleQuotes =0;
+        
         while (token != NULL){
             if(token[strlen(token)-1] == '\n'){
                 token[strlen(token)-1]=0;//make it end of string         
             }
+
+            char *tempStr = trimwhitespace(token);
+            char *dummy = NULL;
+            if(tempStr[0] == '"')
+                headerDoubleQuotes=1;
+            if(tempStr[strlen(tempStr)-1] == '"'){
+                headerDoubleQuotes=0;
+                tailerDoubleQuotes=1;
+            }
+            if(headerDoubleQuotes== 1 && tailerDoubleQuotes == 0){
+                dummy=strdup(tempStr);
+                int len =strlen(dummy);
+                dummy[len]=',';
+                dummy[len+1]='\0';
+                printf("%s",dummy);                
+            }else if(tailerDoubleQuotes == 1){
+                dummy=strdup(tempStr);
+                printf("%s\n",dummy);  
+            }
             
+            if(headerDoubleQuotes== 1 || tailerDoubleQuotes == 1){
+                new_array[counter] = 
+            }
             new_array[counter] = *token ? trimwhitespace(token) : EMPTY_STRING; // store token into array
             token = strtok_single(NULL, ",");
             counter++;
