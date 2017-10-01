@@ -115,7 +115,6 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
             }
         }
         else{//if numeric
-            printf("left%d middle%d right%d L:%s R:%s\n",left,middle,right,L[i].str,R[j].str);
             if (atoi(L[i].str) <= atoi(R[j].str)) {
                 sort_array[k].str = L[i].str;
                 sort_array[k].index = L[i].index;
@@ -417,16 +416,16 @@ int main(int argc, char** argv){
     // if the string is a number, then sort based on the value of the number
     // NOTE: numeric 0:false 1:true
     int MAXROW=rowNumber-1;
-    if(analyzeFlag==1)MAXROW=sortArraycount;
+    if(analyzeFlag==1)MAXROW=sortArraycount-1;
 
-    printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+    //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
     if(MAXROW>=0)
         mergeSort(sort_array, 0, MAXROW,numeric); 
     
-    printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+    //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
          
-    if(MAXROW==0)printf("no data satisfying this condition");
-    
+    if(sortArraycount==0)printf("no data satisfying this condition");
+
     count=0;
     for(;count<MAXROW+1;count++){
         for(i=0;i<dataCol;i++){
