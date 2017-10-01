@@ -1,5 +1,6 @@
 name,class,age
-ruicheng,cs31,23
+andrew,cs01,33
+Ruicheng Wu,cs31,23
  chenpu ,cs32,21
 ,cs31,20
 erbi,"run,hide,hit",23
