@@ -413,18 +413,17 @@ int main(int argc, char** argv){
     // return 0 for false, non-zero for true.
     int numeric = numericFlag;
 
-    //printf("before %d %d %d\n",sort_array[0].index,sort_array[1].index,sort_array[2].index);
     
     // if the string is a number, then sort based on the value of the number
     // NOTE: numeric 0:false 1:true
     int MAXROW=rowNumber-1;
     if(analyzeFlag==1)MAXROW=sortArraycount;
 
-    //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+    printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
     if(MAXROW>=0)
         mergeSort(sort_array, 0, MAXROW,numeric); 
     
-    //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+    printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
          
     if(MAXROW==0)printf("no data satisfying this condition");
     
