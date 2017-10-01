@@ -221,14 +221,54 @@ int main(int argc, char** argv){
         // using token to split each line.
         // store each token into corresponding array cell.
         int counter = 0;
+
+        //variables in order to keep tracking of cells that contains , value
+        int headerDoubleQuotes = 0;
+        int tailerDoubleQuotes =0;
+        
+        char * tempStr;
+        char  tempCell[1024];
         while (token != NULL){
             if(token[strlen(token)-1] == '\n'){
                 token[strlen(token)-1]=0;//make it end of string         
             }
+
+            char *tempStr = trimwhitespace(token);
+            char *dummy = NULL;
+            if(tempStr[0] == '"'){
+                headerDoubleQuotes=1;
+                strcpy(tempCell,"");         
+            }       
+            if(tempStr[strlen(tempStr)-1] == '"'){
+                headerDoubleQuotes=0;
+                tailerDoubleQuotes=1;
+            }
+            if(headerDoubleQuotes== 1 && tailerDoubleQuotes == 0){
+                dummy=strdup(tempStr);
+                int len =strlen(dummy);
+                dummy[len]=',';
+                dummy[len+1]='\0';
+                strcat(tempCell, dummy);                
+                //printf("%s",tempCell);                
+            }else if(tailerDoubleQuotes == 1){
+                dummy=strdup(tempStr);
+                strcat(tempCell, dummy);                                
+                printf("%s\n",tempCell); 
+                headerDoubleQuotes=0; 
+            }
             
-            new_array[counter] = *token ? trimwhitespace(token) : EMPTY_STRING; // store token into array
+            if(tailerDoubleQuotes == 1){
+                tailerDoubleQuotes=0;
+               new_array[counter] = tempCell;
+               //strcpy(tempCell,"");   
+               counter++;               
+            }
+            else if(headerDoubleQuotes!= 1 && tailerDoubleQuotes!=1){
+                new_array[counter] = *token ? trimwhitespace(token) : EMPTY_STRING; // store token into array
+                counter++;
+            }
+            
             token = strtok_single(NULL, ",");
-            counter++;
         }
 
         // create a new node
