@@ -183,6 +183,20 @@ int main(int argc, char** argv){
     // get the sort value type
     char* sort_value_type = argv[2];
 
+    //extra credit, ./a.exe -c [col] -a [condition] is the entire format to run
+    //[condition] : if we do ./a.exe -c actor -a ="Charlize Theron", this program is going to return all rows that contains "Charlize Theron" in
+    //"actor" field. It is like a reduct version of Mysql written by C.
+    char * analyzeCmd =NULL;
+    char * analyzeCond=NULL;
+    if(argc == 5){
+    analyzeCmd = argv[3];
+    analyzeCond = argv[4];
+    }
+    int analyzeFlag = 0;
+    if(analyzeCmd!= NULL && strcmp(analyzeCmd,"-a")==0)analyzeFlag=1;
+
+    
+
     // head of the Linked List
     struct node *head = NULL;
     struct node *prev = NULL;
@@ -249,18 +263,15 @@ int main(int argc, char** argv){
                 dummy[len]=',';
                 dummy[len+1]='\0';
                 strcat(tempCell, dummy);                
-                //printf("%s",tempCell);                
             }else if(tailerDoubleQuotes == 1){
                 dummy=strdup(tempStr);
                 strcat(tempCell, dummy);                                
-                printf("%s\n",tempCell); 
                 headerDoubleQuotes=0; 
             }
             
             if(tailerDoubleQuotes == 1){
                 tailerDoubleQuotes=0;
                new_array[counter] = tempCell;
-               //strcpy(tempCell,"");   
                counter++;               
             }
             else if(headerDoubleQuotes!= 1 && tailerDoubleQuotes!=1){
@@ -330,24 +341,95 @@ int main(int argc, char** argv){
     SortArray *sort_array;
     sort_array = (SortArray*) malloc(rowNumber * sizeof(SortArray));
     int count = 0;
-    for (; count < rowNumber; count++){
-        //printf("index %d and str %s \n",count,dataArray[count][i]);        
-        sort_array[count].index = count;
-        sort_array[count].str = dataArray[count][i];
+    int sortArraycount=0;
+    //a safer way to check if numeric
+    int numericFlag = 0;
+    //---analyze part----//
+    int analyzeOperator = 10;//0 means =. 1 means >, -1 means <
+    int analyzeCondNumeric = 10;
+
+    while (count < rowNumber){
+        //printf("index %d and str %s \n",count,dataArray[count][i]);   
+        if(analyzeFlag==1 && analyzeOperator==10)//it is an analyze command
+        {
+            analyzeOperator = analyzeCond[0]=='='?0:analyzeCond[0]=='+'?1:analyzeCond[0]=='-'?-1:10;
+            //move pointer ahead to get the rest condition
+            analyzeCond++;   
+            if(isNumeric(analyzeCond)==0)   analyzeCondNumeric=0;
+            else      analyzeCondNumeric=1; 
+        }     
+
+        int analyzeSortFlag = 0;
+        if(analyzeFlag==1){
+            switch(analyzeOperator){
+                case -1://operator <
+                        if(analyzeCondNumeric==1){//if numeric
+                            if(atoi(dataArray[count][i])<atoi(analyzeCond))analyzeSortFlag=1;
+                        }
+                        else{//if string
+                            if(strcmp(dataArray[count][i],analyzeCond)<0)analyzeSortFlag=1;                            
+                        }
+                        break;
+                case 0://operator =
+                        if(analyzeCondNumeric==1){//if numeric
+                            if(atoi(dataArray[count][i])==atoi(analyzeCond))analyzeSortFlag=1;
+                        }
+                        else{//if string
+                            if(strcmp(dataArray[count][i],analyzeCond)==0)analyzeSortFlag=1;                            
+                        }
+                        break;
+                case 1://operator >
+                        if(analyzeCondNumeric==1){//if numeric
+                            if(atoi(dataArray[count][i])>atoi(analyzeCond))analyzeSortFlag=1;
+                        }
+                        else{//if string
+                            if(strcmp(dataArray[count][i],analyzeCond)>0)analyzeSortFlag=1;                            
+                        }
+                        break;
+                default:
+                        printf("something wrong with analyze oper");
+                        break;
+            }
+            if(analyzeSortFlag==1){
+                sort_array[sortArraycount].index = count;
+                sort_array[sortArraycount].str = dataArray[count][i];
+                numericFlag += isNumeric(sort_array[sortArraycount].str);
+                
+                sortArraycount++;
+
+            }
+        }else{
+            sort_array[count].index = count;
+            sort_array[count].str = dataArray[count][i];
+            numericFlag += isNumeric(sort_array[count].str);
+        }
+        //printf("%s count:%d\n",sort_array[sortArraycount].str,sortArraycount);        
+        count++; 
     }
 
+    //printf("%d %s how many rows :%d\n",analyzeOperator,analyzeCond,sortArraycount);
     // check if the value is digits or string
     // return 0 for false, non-zero for true.
-    int numeric = isNumeric(sort_array[0].str);
+    int numeric = numericFlag;
 
     //printf("before %d %d %d\n",sort_array[0].index,sort_array[1].index,sort_array[2].index);
     
     // if the string is a number, then sort based on the value of the number
     // NOTE: numeric 0:false 1:true
-    mergeSort(sort_array, 0, rowNumber-1,numeric); 
+    int MAXROW=rowNumber-1;
+    if(analyzeFlag==1)MAXROW=sortArraycount;
 
+    printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+    
+    if(MAXROW>0)
+        mergeSort(sort_array, 0, MAXROW,numeric); 
+    
+    printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+         
+    if(MAXROW==0)printf("no data satisfying this condition");
+    
     count=0;
-    for(;count<dataRow;count++){
+    for(;count<MAXROW;count++){
         for(i=0;i<dataCol;i++){
             i==(dataCol-1)?printf("%s\n",dataArray[sort_array[count].index][i]):printf("%s,",dataArray[sort_array[count].index][i]);
         }//end of line
