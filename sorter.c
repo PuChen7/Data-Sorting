@@ -57,8 +57,11 @@ void initValueTypesArray(char** array,int arraySize,char* line){
 //global value to for column and row
 int static dataRow,dataCol;
 void initDataArray(char* array[dataRow][dataCol],struct node * data){
-    for(int i = 0;i<dataRow;i++){
-        for(int j = 0; j< dataCol ;j++){
+    int i,j;
+	i = 0;
+    for(;i<dataRow;i++){
+	j=0;		
+        for(; j< dataCol ;j++){
             array[i][j]=data->line_array[j];
         }
         data = data->next;
@@ -143,6 +146,9 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
         k++;
     }
 
+    free(L);
+    free(R);
+
 }
 
 // function for sorting numbers
@@ -221,8 +227,11 @@ int main(int argc, char** argv){
             value_type_number = 0;
             while (token != NULL){
                 if(token[strlen(token)-1] == '\n'){
-                    token[strlen(token)-1]=0;//make it end of string         
+		    int len = strlen(token);
+                    token[len-1]='\0';//make it end of string  
+       
                 }
+		//printf("|%s|\n",token);
                 token = strtok_single(NULL, ",");
                 value_type_number++;    // update the number of columns(value types).
             }
@@ -244,7 +253,8 @@ int main(int argc, char** argv){
         char  tempCell[1024];
         while (token != NULL){
             if(token[strlen(token)-1] == '\n'){
-                token[strlen(token)-1]=0;//make it end of string         
+               	int len = strlen(token);
+                token[len-1]='\0';//make it end of string         
             }
 
             char *tempStr = trimwhitespace(token);
@@ -301,7 +311,7 @@ int main(int argc, char** argv){
     
     char* headerArray[value_type_number];   // this array hold the first row.
     initValueTypesArray(headerArray,value_type_number,headerLine);    
-    
+    //printf("%s\n",headerArray[2]);
 
     //resuage of temp to 'copy' a head, then pass it to initDataArray to store 2d data array
     struct node *temp = (struct node*) malloc(sizeof(struct node));
@@ -326,7 +336,7 @@ int main(int argc, char** argv){
     int i = 0;
     int isFound = 1;
     for (; i < value_type_number; i++){
-        if (strcmp(headerArray[i], sort_value_type) == 0){
+        if (strcmp(trimwhitespace(headerArray[i]), sort_value_type) == 0){
             isFound = 0;    // need to check if the csv file has this type.
             break;  // i is the index of the column
         }
@@ -367,7 +377,7 @@ int main(int argc, char** argv){
                             if(atoi(dataArray[count][i])<atoi(analyzeCond))analyzeSortFlag=1;
                         }
                         else{//if string
-                            if(strcmp(dataArray[count][i],analyzeCond)<0)analyzeSortFlag=1;                            
+                            if(strcmp(trimwhitespace(dataArray[count][i]),analyzeCond)<0)analyzeSortFlag=1;                            
                         }
                         break;
                 case 0://operator =
@@ -375,7 +385,7 @@ int main(int argc, char** argv){
                             if(atoi(dataArray[count][i])==atoi(analyzeCond))analyzeSortFlag=1;
                         }
                         else{//if string
-                            if(strcmp(dataArray[count][i],analyzeCond)==0)analyzeSortFlag=1;                            
+                            if(strcmp(trimwhitespace(dataArray[count][i]),analyzeCond)==0)analyzeSortFlag=1;                            
                         }
                         break;
                 case 1://operator >
@@ -383,7 +393,7 @@ int main(int argc, char** argv){
                             if(atoi(dataArray[count][i])>atoi(analyzeCond))analyzeSortFlag=1;
                         }
                         else{//if string
-                            if(strcmp(dataArray[count][i],analyzeCond)>0)analyzeSortFlag=1;                            
+                            if(strcmp(trimwhitespace(dataArray[count][i]),analyzeCond)>0)analyzeSortFlag=1;                            
                         }
                         break;
                 default:
@@ -424,8 +434,15 @@ int main(int argc, char** argv){
     
     //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
          
-    if(sortArraycount==0)printf("no data satisfying this condition");
+    if(sortArraycount==0&&analyzeFlag==1)printf("no data satisfying this condition");
 
+    count=0;
+    for(;count<value_type_number;count++){
+        count==(value_type_number-1)?
+        printf("%s\n",headerArray[count])
+        :printf("%s,",headerArray[count]);
+    }
+    
     count=0;
     for(;count<MAXROW+1;count++){
         for(i=0;i<dataCol;i++){
