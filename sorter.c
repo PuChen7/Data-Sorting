@@ -42,7 +42,6 @@ void initValueTypesArray(char** array,int arraySize,char* line){
     }
 }
 
-//global value to for column and row
 void initDataArray(char* array[dataRow][dataCol],struct node * data){
     int i,j;
 	i = 0;
