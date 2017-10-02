@@ -25,12 +25,12 @@ typedef struct{
     char* str;  // hold the string value
 } SortArray;
 
-//Suggestion: prototype a mergesort function
-#include "mergesort.c"
+// //Suggestion: prototype a mergesort function
+// #include "mergesort.c"
 
 
 /* global variables */
-extern int dataRow,dataCol;
+int dataRow,dataCol;
 
 /************************/
 
