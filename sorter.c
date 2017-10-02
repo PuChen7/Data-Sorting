@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#define sorter_header "sorter.h"
-#include sorter_header
+#include "mergesort.c"
 #include <ctype.h>
+
 #define EMPTY_STRING ""
 
 char *strtok_single (char * str, char const * delims) {
@@ -43,6 +43,7 @@ void initValueTypesArray(char** array,int arraySize,char* line){
 }
 
 //global value to for column and row
+int static dataRow,dataCol;
 void initDataArray(char* array[dataRow][dataCol],struct node * data){
     int i,j;
 	i = 0;
@@ -209,7 +210,7 @@ int main(int argc, char** argv){
         prev-> next = temp;
         prev = temp;
     }
-    
+
     char* headerArray[value_type_number];   // this array hold the first row.
     initValueTypesArray(headerArray,value_type_number,headerLine);    
     //printf("%s\n",headerArray[2]);
