@@ -4,7 +4,7 @@ This project takes a CSV file and sort data based on different value types using
 # Running the program
 The program can be implemented in Terminal using the following example command:
 
-cat csvfile.csv | ./sorter -c value_type > output.csv
+`cat csvfile.csv | ./sorter -c value_type > output.csv`
 
 value_type specifies what type you want to sort.
 
