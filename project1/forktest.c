@@ -26,9 +26,9 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path){
                 strcat(path, "/");
                 DIR *newdir = opendir(strcat(path,pDirent->d_name));
                 recur(newdir, pDirent, path);
-                if ((pDirent = readdir(newdir)) != NULL){
+                /*if ((pDirent = readdir(newdir)) != NULL){
                     printf("KKKK");
-                }
+                }*/
             } else if (pid > 0){    // parent
                 printf("parent in %s\n", pDirent->d_name);
             }
