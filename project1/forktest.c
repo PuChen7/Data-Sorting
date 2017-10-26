@@ -36,40 +36,36 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path){
         printf ("Cannot open directory '%s'\n", v[1]);
         return 1;
     }*/
+
     while ((pDirent = readdir(pDir)) != NULL) {
+
         if (pDirent->d_name[0] == '.'){continue;}
-        //printf("scanning file %s\n", pDirent->d_name);
+
+
+        //printf("scanning file %s  with pid [%d] +[%d]|", pDirent->d_name,getpid(),*arrayCursor);
+
 
         if(strchr(pDirent->d_name, '.') != NULL){
           if(strcmp("csv",get_filename_ext(pDirent->d_name))==0){
-            pid = fork();
-            if (pid < 0){
-                printf("error\n");
-                exit(0);
-            } else if (pid == 0){   // child,aka sorting file
-                pidArray[*arrayCursor]=getpid();
-                fileArray[*arrayCursor]=pDirent->d_name;
-                *arrayCursor=*arrayCursor+1;
-            } else if (pid > 0){    // parent
-                //printf("found directory %s\n", pDirent->d_name);
-            }
-          }else{
-            //other files or invalid csv
+              if(getpid()==init_pid+*arrayCursor)
+                      printf("found file %s with pid [%d] [%d] parent[%d]\n", pDirent->d_name,getpid(),pid,getppid());
           }
-
-          
-        }
+      }
         if (strchr(pDirent->d_name, '.') == NULL){//search for folder
-            pid = fork();
+          pid = fork();
             if (pid < 0){
                 printf("error\n");
                 exit(0);
             } else if (pid == 0){   // child,aka entered directory
                 //printf("enter directory %s\n", pDirent->d_name);
+                pidArray[*arrayCursor]=getpid();
+                fileArray[*arrayCursor]=pDirent->d_name;
+                *arrayCursor=*arrayCursor+1;
 
                 strcat(path, "/");
                 DIR *newdir = opendir(strcat(path,pDirent->d_name));
                 recur(newdir, pDirent, path);
+
                 /*if ((pDirent = readdir(newdir)) != NULL){
                     printf("KKKK");
                 }*/
