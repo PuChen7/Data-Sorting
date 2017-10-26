@@ -55,7 +55,7 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path){
 
     if(getpid()==init_pid){
       wait(NULL);
-      printf("\nTotal Child Processes Number: %d ",*pCounter);
+      printf("\nTotal Child Processes Number: %d \n",*pCounter);
       munmap(pCounter, sizeof *pCounter);
     }
 
