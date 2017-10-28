@@ -215,19 +215,24 @@ void sort_one_file(char* input_path,char* output_path){
   if(MAXROW>=0)
       mergeSort(sort_array, 0, MAXROW,numeric);
 
+  //NOTE write to file
+  //NOTE -o
+
   //print header
   count=0;
   for(;count<value_type_number;count++){
       count==(value_type_number-1)?
-      printf("%s\n",headerArray[count])
-      :printf("%s,",headerArray[count]);
-  }
+      fprintf(output_file, "%s\n", headerArray[count])
+      :fprintf(output_file, "%s", headerArray[count]);
 
+  }
   //print content
   count=0;
   for(;count<MAXROW+1;count++){
       for(i=0;i<dataCol;i++){
-          i==(dataCol-1)?printf("%s\n",dataArray[sort_array[count].index][i]):printf("%s,",dataArray[sort_array[count].index][i]);
+          i==(dataCol-1)?
+          fprintf(output_file, "%s\n",dataArray[sort_array[count].index][i])
+          :fprintf(output_file, "%s,",dataArray[sort_array[count].index][i]);
       }//end of line
   }
 
@@ -425,6 +430,7 @@ int main(int argc, char** argv){
 
     //NOTE we should handle some default behaviour like no -d or -o was input
     //NOTE getcwd get current dir. we can chdir("..") and then perform traverse dir
+    //NOTE -d , up to you
 
     if(argc==3){
       if (getcwd(cwd, sizeof(cwd)) != NULL){
