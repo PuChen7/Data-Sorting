@@ -64,7 +64,7 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path){
                     exit(0);
                }
               char* currentDir = strcat(strcat(path,"/"),pDirent->d_name);
-
+              printf("%s\n",currentDir);
               input_file = fopen(currentDir, "r");
               if (input_file == NULL)
               {
