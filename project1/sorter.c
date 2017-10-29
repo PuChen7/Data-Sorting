@@ -27,7 +27,6 @@ static char* sort_value_type;
 void sort_one_file(char* input_path,char* output_path){
   FILE    *input_file;
   FILE    *output_file;
-
   output_file = fopen(output_path, "w");
    if (output_file == NULL)
    {
@@ -270,12 +269,11 @@ char *remove_ext(char* mystr) {
 
 
 void recur(DIR *pDir, struct dirent *pDirent, char* path){
-
     pid_t pid,fpid=getppid();
 
     while ((pDirent = readdir(pDir)) != NULL) {
         if (pDirent->d_name[0] == '.'){continue;}
-        //printf("scanning file %s  with pid [%d] +[%d]|", pDirent->d_name,getpid(),*pidArrayCursor);
+        //printf("scanning file %s  with pid [%d] |\n", pDirent->d_name,getpid());
         if(strchr(pDirent->d_name, '.') != NULL ){
           if(strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-out")==NULL){//found csv
             fpid = fork();
@@ -318,7 +316,6 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path){
 
                 strcat(path, "/");
                 DIR *newdir = opendir(strcat(path,pDirent->d_name));
-
                 recur(newdir, pDirent, path);
 
                 break;
@@ -453,9 +450,9 @@ int main(int argc, char** argv){
 
     // ./a.o -c <column> -d dir -otherpara
     pDir = opendir (argv[4]);
-    char path[200];
-    strncpy(path, argv[4], strlen(argv[4]));
-    char* ptr = path;
+    char* ptr = (char*)malloc(200);
+    strncpy(ptr, argv[4], strlen(argv[4]));
+
     printf("Initial PID : %d\n", (init_pid=getpid()));
 
     /*
