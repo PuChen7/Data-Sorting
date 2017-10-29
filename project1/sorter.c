@@ -54,11 +54,12 @@ void sort_one_file(char* input_path,char* output_path){
   char* headerLine;   // hold the first line of the csv file, which is the value types.
   int isFirstElement = 0; // mark the first element in LL
 
+  int mfstarboy = 0;
+  char* mfarray[10];
   // loop for reading the csv file line by line.
   while (fgets(line, 1024, input_file)){
       rowNumber++;
       char* tmp = strdup(line);
-
       // first row
       // Returns first token
       char *token = strtok_single(tmp, ",");
@@ -67,7 +68,7 @@ void sort_one_file(char* input_path,char* output_path){
           value_type_number = 0;
           while (token != NULL){
               if(token[strlen(token)-1] == '\n'){
-      int len = strlen(token);
+                int len = strlen(token);
                   token[len-1]='\0';//make it end of string
 
               }
@@ -119,7 +120,7 @@ void sort_one_file(char* input_path,char* output_path){
           }
 
           if(tailerDoubleQuotes == 1){
-              tailerDoubleQuotes=0;
+             tailerDoubleQuotes=0;
              new_array[counter] = tempCell;
              counter++;
           }
@@ -134,9 +135,13 @@ void sort_one_file(char* input_path,char* output_path){
       // create a new node
       // rowNumber starts from 1
       struct node *temp = (struct node*) malloc(sizeof(struct node));
-      temp-> line_array = new_array;
-      temp-> next = NULL;
+      temp-> line_array = (char**)malloc(sizeof new_array);
+      int starboy = 0;
+      for(;starboy<value_type_number;starboy++){
+        temp-> line_array[starboy] = strdup(new_array[starboy]);
+      }
 
+      temp-> next = NULL;
       if (isFirstElement == 0){
           temp-> next = head;
           head = temp;
@@ -146,6 +151,7 @@ void sort_one_file(char* input_path,char* output_path){
       }
       prev-> next = temp;
       prev = temp;
+
   }
 
   char* headerArray[value_type_number];   // this array hold the first row.
@@ -156,6 +162,7 @@ void sort_one_file(char* input_path,char* output_path){
   struct node *temp = (struct node*) malloc(sizeof(struct node));
   temp-> line_array = head->line_array;
   temp-> next = head -> next;
+
   //[row][column]
   dataCol= value_type_number;
   dataRow = rowNumber;
@@ -223,7 +230,7 @@ void sort_one_file(char* input_path,char* output_path){
   for(;count<value_type_number;count++){
       count==(value_type_number-1)?
       fprintf(output_file, "%s\n", headerArray[count])
-      :fprintf(output_file, "%s", headerArray[count]);
+      :fprintf(output_file, "%s,", headerArray[count]);
 
   }
   //print content
@@ -362,9 +369,9 @@ void initValueTypesArray(char** array,int arraySize,char* line){
 
 void initDataArray(char* array[dataRow][dataCol],struct node * data){
     int i,j;
-	i = 0;
+	     i = 0;
     for(;i<dataRow;i++){
-	j=0;
+	     j=0;
         for(; j< dataCol ;j++){
             array[i][j]=data->line_array[j];
         }
