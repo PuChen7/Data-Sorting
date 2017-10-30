@@ -1,11 +1,7 @@
-name,age,class
-"a4,a3",14,¿
-a4,14,À
-a4,14,Á
-a4,14,{cs213
-a7,15,"Ca,213"
-a9,16,"Cs,213"
-a3,14,cs213
-a6,14,"Da,213"
-"Ds,214",13,"Ds,214"
-a5,13,"ds,214"
+color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes
+Color,James Cameron,723,178,0,855
+Color,Gore Verbinski,302,169,563,1000
+Color,James Cameron,723,178,0,855
+Color,Gore Verbinski,302,169,563,1000
+Color,James Cameron,723,178,0,855
+Color,Gore Verbinski,302,169,563,1000

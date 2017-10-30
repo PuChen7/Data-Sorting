@@ -15,24 +15,32 @@ int weird_char_check(char src){//return 1 means found weird character
   else
     return 1;
 }
-char* double_quote_elimination(char* src){
+void double_quote_elimination(char* src,char* temp){
     if(src[0]=='"'){
-      char* temp = (char*)malloc(strlen(src)-1);
       int c = 0;
       for(;c<strlen(src)-2;c++){
         *(temp+c)=*(src+c+1);
       }
       *(temp+c+1)='\0';
-      return temp;
+      temp=NULL;
+      return;
     }
-    else return src;
 }
 int hyper_strcmp(char* str1,char* str2){
     char* agentStr1 = (char*)malloc(strlen(str1)+1);
+    char* tempStr1 = (char*)malloc(strlen(str1)-1);
     char* agentStr2 = (char*)malloc(strlen(str2)+1);
-    strcpy(agentStr1,double_quote_elimination(str1));
-    strcpy(agentStr2,double_quote_elimination(str2));
-
+    char* tempStr2 = (char*)malloc(strlen(str2)-1);
+    double_quote_elimination(str1,tempStr1);
+    tempStr1==NULL?
+      strcpy(agentStr1,str1):
+      strcpy(agentStr1,tempStr1);
+    double_quote_elimination(str2,tempStr2);
+    tempStr2==NULL?
+      strcpy(agentStr2,str2):
+      strcpy(agentStr2,tempStr2);
+     free(tempStr1);
+     free(tempStr2);
 
     int init_counter = 0;
     for(;init_counter<max(strlen(agentStr1),strlen(agentStr2));init_counter++){
@@ -41,12 +49,24 @@ int hyper_strcmp(char* str1,char* str2){
       int weird_a = weird_char_check(a);//1 weird ,0 not
       int weird_b = weird_char_check(b);
       if(weird_a&&weird_b){
-        if(a>b) return 1;
-        else if(a<b)return -1;
+        if(a>b){
+          free(agentStr1);
+          free(agentStr2);
+          return 1;
+        }
+        else if(a<b){
+          free(agentStr1);
+          free(agentStr2);
+          return -1;
+        }
         else continue;
       }else if(weird_a){
+        free(agentStr1);
+        free(agentStr2);
         return -1;
       }else if(weird_b){
+        free(agentStr1);
+        free(agentStr2);
         return 1;
       }else{//both are regular character
         char tempA = a;
@@ -56,12 +76,23 @@ int hyper_strcmp(char* str1,char* str2){
         if(tempA>=97)tempA-=32;
         if(tempB>=97)tempB-=32;
 
-
         //after convert into uppercase,if same,then if a is lowercase before,b must be uppercase
         //vice versa
-        if(tempA==tempB)return a>=97?1:-1;
-        else if(tempA>tempB)return 1;
-        else return -1;
+        if(tempA==tempB){
+          free(agentStr1);
+          free(agentStr2);
+          return a>=97?1:-1;
+        }
+        else if(tempA>tempB){
+          free(agentStr1);
+          free(agentStr2);
+          return 1;
+        }
+        else {
+          free(agentStr1);
+          free(agentStr2);
+          return -1;
+        }
       }
     }
     if((strlen(agentStr1)-init_counter)>1) return 1;
@@ -99,24 +130,24 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
         if(numeric==0){//if str
             int cmpResult = hyper_strcmp(L[i].str,R[j].str);
             if (cmpResult<=0) {
-                sort_array[k].str = L[i].str;
+                sort_array[k].str = strdup(L[i].str);
                 sort_array[k].index = L[i].index;
                 i++;
             }
             else {
-                sort_array[k].str = R[j].str;
+                sort_array[k].str = strdup(R[j].str);
                 sort_array[k].index = R[j].index;
                 j++;
             }
         }
         else{//if numeric
             if (atoi(L[i].str) <= atoi(R[j].str)) {
-                sort_array[k].str = L[i].str;
+                sort_array[k].str = strdup(L[i].str);
                 sort_array[k].index = L[i].index;
                 i++;
             }
             else {
-                sort_array[k].str = R[j].str;
+                sort_array[k].str = strdup(R[j].str);
                 sort_array[k].index = R[j].index;
                 j++;
             }
@@ -125,19 +156,20 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
     }
 
     while (i < n1) {
-        sort_array[k].str = L[i].str;
+        sort_array[k].str = strdup(L[i].str);
         sort_array[k].index = L[i].index;
         i++;
         k++;
     }
 
     while (j < n2) {
-        sort_array[k].str = R[j].str;
+        sort_array[k].str = strdup(R[j].str);
         sort_array[k].index = R[j].index;
         j++;
         k++;
     }
 
+    
     free(L);
     free(R);
 

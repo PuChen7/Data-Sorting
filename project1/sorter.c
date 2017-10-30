@@ -14,13 +14,12 @@
 #include <sys/types.h>
 
 #define EMPTY_STRING ""
-
+#define VALID_MOVIE_HEADER_NUMBER 28
 static int *stdoutFlag;
 static int *pCounter;
 pid_t init_pid;
 
 static int argCounter;
-static char** argVariables;
 static char* sort_value_type;
 
 
@@ -55,13 +54,15 @@ void sort_one_file(char* input_path,char* output_path){
 
   int mfstarboy = 0;
   char* mfarray[10];
+  char* tmp=NULL;
+  char *token=NULL;
   // loop for reading the csv file line by line.
   while (fgets(line, 1024, input_file)){
       rowNumber++;
-      char* tmp = strdup(line);
+      tmp = strdup(line);
       // first row
       // Returns first token
-      char *token = strtok_single(tmp, ",");
+      token = strtok_single(tmp, ",");
       if(rowNumber==0){
           headerLine = strdup(line);
           value_type_number = 0;
@@ -90,6 +91,7 @@ void sort_one_file(char* input_path,char* output_path){
 
       char * tempStr;
       char  tempCell[1024];
+      char *dummy = NULL;
       while (token != NULL){
           if(token[strlen(token)-1] == '\n'){
               int len = strlen(token);
@@ -97,7 +99,7 @@ void sort_one_file(char* input_path,char* output_path){
           }
 
           char *tempStr = trimwhitespace(token);
-          char *dummy = NULL;
+
           if(tempStr[0] == '"'){
               headerDoubleQuotes=1;
               strcpy(tempCell,"");
@@ -131,12 +133,14 @@ void sort_one_file(char* input_path,char* output_path){
           token = strtok_single(NULL, ",");
       }
 
+      free(dummy);
       // create a new node
       // rowNumber starts from 1
       struct node *temp = (struct node*) malloc(sizeof(struct node));
-      temp-> line_array = (char**)malloc(sizeof new_array);
+      temp-> line_array = (char**)malloc(value_type_number * sizeof(char*));
       int starboy = 0;
       for(;starboy<value_type_number;starboy++){
+        temp-> line_array[starboy] = malloc((strlen(new_array[starboy])+1)* sizeof(char));
         temp-> line_array[starboy] = strdup(new_array[starboy]);
       }
 
@@ -150,31 +154,24 @@ void sort_one_file(char* input_path,char* output_path){
       }
       prev-> next = temp;
       prev = temp;
-
+      free(new_array);
   }
+  free(tmp);
+  free(token);
 
   char* headerArray[value_type_number];   // this array hold the first row.
   initValueTypesArray(headerArray,value_type_number,headerLine);
-  //printf("%s\n",headerArray[2]);
-
   //resuage of temp to 'copy' a head, then pass it to initDataArray to store 2d data array
   struct node *temp = (struct node*) malloc(sizeof(struct node));
   temp-> line_array = head->line_array;
   temp-> next = head -> next;
-
   //[row][column]
   dataCol= value_type_number;
   dataRow = rowNumber;
   char* dataArray[dataRow][dataCol];
   initDataArray(dataArray,temp);
 
-  // free Linked List
-  struct node *tmp;
-  while (head != NULL){
-      tmp = head;
-      head = head->next;
-      free(tmp);
-  }
+
 
   /* sorintg */
   // first need to decide which column to sort. Do the search on headerArray.
@@ -245,6 +242,24 @@ void sort_one_file(char* input_path,char* output_path){
   /* When you finish with the file, close it */
   fclose(input_file);
   fclose(output_file);
+
+  if(getpid()==(init_pid+*pCounter)){
+  // free Linked List
+  struct node *tmpNode;
+  while (head != NULL){
+      tmpNode = head;
+      head = head->next;
+      int starboy = 0;
+      for(;starboy<value_type_number;starboy++){
+        free(tmpNode-> line_array[starboy]);
+      }
+      free(tmpNode-> line_array);
+      free(tmpNode);
+  }
+  free(temp);
+  free(sort_array);
+  }
+  exit(0);
 }
 
 const char *get_filename_ext(const char *filename) {
@@ -254,47 +269,93 @@ const char *get_filename_ext(const char *filename) {
 }
 
 char *remove_ext(char* mystr) {
-    char *retstr;
-    char *lastdot;
+    char *retstr=NULL;
+    char *lastdot=NULL;
     if (mystr == NULL)
          return NULL;
-    if ((retstr = malloc (strlen (mystr) + 1)) == NULL)
+    if ((retstr = malloc (sizeof (char) * (strlen (mystr) + 1))) == NULL){
         return NULL;
+    }
     strcpy (retstr, mystr);
     lastdot = strrchr (retstr, '.');
-    if (lastdot != NULL)
+    if (lastdot)
         *lastdot = '\0';
+
     return retstr;
 }
 
+int count_header(char* input_path){
+  FILE    *input_file;
+  input_file = fopen(input_path, "r");
+  if (input_file == NULL)
+  {
+      fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
+      fclose(input_file);
+      exit(0);
+  }
+  int rowNumber=0;
+  int value_type_number;
+  char * headerLine;
+  char line[1024];
+  while (fgets(line, 1024, input_file)){
+      char* tmp = strdup(line);
+      char *token = strtok_single(tmp, ",");
+      if(rowNumber==0){
+          headerLine = strdup(line);
+          value_type_number = 0;
+          while (token != NULL){
+              if(token[strlen(token)-1] == '\n'){
+                int len = strlen(token);
+                  token[len-1]='\0';//make it end of string
+              }
+              token = strtok_single(NULL, ",");
+              value_type_number++;    // update the number of columns(value types).
+          }
+          free(tmp);
+          free(headerLine);
+          break;
+      }
+    }
 
+  fclose(input_file);
+  return value_type_number;
+}
 void recur(DIR *pDir, struct dirent *pDirent, char* path){
     pid_t pid,fpid=getppid();
 
-    while ((pDirent = readdir(pDir)) != NULL) {
+    while (pDir&&(pDirent = readdir(pDir)) != NULL) {
         if (pDirent->d_name[0] == '.'){continue;}
         //printf("scanning file %s  with pid [%d] |\n", pDirent->d_name,getpid());
         if(strchr(pDirent->d_name, '.') != NULL ){
-          if(strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-out")==NULL){//found csv
+          if(path&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-out")==NULL){//found csv
+            /*NOTE create path for input and output file, and perform Mergesort on each csv file
+            */
+            char  outP[strlen(path)];
+            char  inP[strlen(path)];
+            strcpy(outP,path);
+            strcpy(inP,path);
+            char * fileNameNoExtension = remove_ext(pDirent->d_name);
+            char * outputPath = strcat(strcat(strcat(outP,"/"),strcat(fileNameNoExtension,"-out")),".csv");
+            char* inputPath = strcat(strcat(inP,"/"),pDirent->d_name);
+            int headerNumber = count_header(inputPath);
+
+            if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
+              printf("%d headers for [%s], we need 28\n",headerNumber,inputPath);
+              if(!fileNameNoExtension)
+                free(fileNameNoExtension);
+              continue;
+            }
+
             fpid = fork();
             if(fpid<0){}
             else if(fpid==0){//child
-
-              /*NOTE create path for input and output file, and perform Mergesort on each csv file
-              */
-              char  outP[strlen(path)];
-              char  inP[strlen(path)];
-              strcpy(outP,path);
-              strcpy(inP,path);
-              char * outputPath = strcat(strcat(strcat(outP,"/"),strcat(remove_ext(pDirent->d_name),"-out")),".csv");
-              char* inputPath = strcat(strcat(inP,"/"),pDirent->d_name);
 
               sort_one_file(inputPath,outputPath);
 
               //printf("found file %s with pid [%d] [%d] parent[%d] \n", pDirent->d_name,getpid(),pid,getppid());
               // !important printf
               //printf("[%d],%s\n",getpid(),pDirent->d_name);
-              sleep(1);
+
               exit(0);
             }
             else{//parent
@@ -404,7 +465,8 @@ char *trimwhitespace(char *str) {
   return str;
 }
 
-int main(int argc, char** argv){
+int main(int argc, char* argv[]){
+    init_pid=getppid();
     // check for command line input
     if (argc < 3){
         printf("error");
@@ -414,12 +476,9 @@ int main(int argc, char** argv){
     //NOTE:copy and setup global parameters in case latter we need it
     sort_value_type = argv[2];
     argCounter = argc;
-    argVariables = malloc(argc * sizeof(char*));
 
     int tempC = 0;
-    for(;tempC<argc;tempC++){
-      argVariables[tempC]=argv[tempC];
-    }
+
 
     struct dirent *pDirent;
     DIR *pDir;
@@ -468,21 +527,23 @@ int main(int argc, char** argv){
     //Here we reap children and print out their PID's
     int status = 0;
     pid_t wpid;
+    pid_t currentPID;
     while ((wpid = wait(&status)) > 0)
     {
+        if(*pCounter==0) currentPID=wpid;
         printf("%d,",wpid);
         *pCounter+=1;
+
     }
 
     //Last line to print total number PID and unmap shared memory
     if(getpid()==init_pid){
       wait(NULL);
       printf("\nTotal Child Processes Number: %d \n",*pCounter);
-      int counter=0;
-
-      munmap(pCounter, sizeof *pCounter);
-      munmap(stdoutFlag, sizeof *stdoutFlag);
+      free(ptr);
     }
 
+    munmap(pCounter, sizeof *pCounter);
+    munmap(stdoutFlag, sizeof *stdoutFlag);
     return 0;
 }
