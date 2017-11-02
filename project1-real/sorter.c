@@ -266,7 +266,8 @@ void sort_one_file(char* input_path,char* output_path){
       // rowNumber starts from 1
       struct node *temp = (struct node*) malloc(sizeof(struct node));
       temp-> line_array = (char**)malloc(value_type_number*sizeof (char*));
-      for(int i = 0;i<value_type_number;i++){
+      int i = 0;
+      for(;i<value_type_number;i++){
         temp-> line_array[i]=strdup(new_array[i]);
       }
       temp-> next = NULL;
@@ -378,7 +379,8 @@ void sort_one_file(char* input_path,char* output_path){
   while (head != NULL){
       tmp = head;
       head = head->next;
-      for(int i = 0;i<value_type_number;i++){
+      int i = 0;
+      for(;i<value_type_number;i++){
         free(tmp-> line_array[i]);
       }
       free(tmp-> line_array);
