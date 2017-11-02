@@ -8,7 +8,7 @@
 /* Function for locating the range of the first letter of the string
    There are 4 ranges based on ASCII values.
    range0   -->   0                            -->   NULL
-   range1   -->   -1-(-128)                    -->   Negative ascii 
+   range1   -->   -1-(-128)                    -->   Negative ascii
    range2   -->   1-47, 58-64, 91-96, 123-127  -->   Special Characters
    range3   -->   48-57                        -->   Numerical values
    range4   -->   65-90                        -->   Uppercase Letters
@@ -19,7 +19,7 @@
 int getRangeofString(char str){
     if ((int)str == 0){return 0;}
     else if ((int)str >=-128 && (int)str <= -1){return 1;}
-    else if (((int)str >= 58 && (int)str <= 64) || ((int)str >= 1 && (int)str <= 47) || 
+    else if (((int)str >= 58 && (int)str <= 64) || ((int)str >= 1 && (int)str <= 47) ||
             ((int)str >= 91 && (int)str <= 96) || ((int)str >= 123 && (int)str <= 127)){return 2;}
     else if ((int)str >= 48 && (int)str <= 57){return 3;}
     else if((int)str >= 65 && (int)str <= 90){return 4;}
@@ -53,7 +53,7 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
     i = 0;
     j = 0;
     k = left;
-    
+
     while (i < n1 && j < n2) {
         int cmpResult = 0;
         if(numeric!=0){ //if str
@@ -89,7 +89,7 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
               int str2_len2 = iterator+1;
               char* str1_ptr = str1;
               char* str2_ptr = str2;
-              
+
 
               int index = 0;
               while (index<str1_len1 && index<str2_len2 && str1_ptr[0] != str2_ptr[0]){
@@ -121,9 +121,9 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
 
               // if str1 and str2 are in the SAME range, then determine based on own values
               if (range_of_str1 == range_of_str2 && loopflag == 0){
-                  
+
                   if ((int)str1_ptr[index] <= (int)str2_ptr[index]){
-                    
+
                     cmpResult = -1;   // * -1 indicates the str1 is less than or equal to str2 (<=)
                   }
               } else {
@@ -136,24 +136,24 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
 
             //int cmpResult = strcmp(L[i].str,R[j].str);
             if (cmpResult == -1) {
-                sort_array[k].str = strdup(L[i].str);
+                sort_array[k].str = L[i].str;
                 sort_array[k].index = L[i].index;
                 i++;
             }
             else {
-                sort_array[k].str = strdup(R[j].str);
+                sort_array[k].str = R[j].str;
                 sort_array[k].index = R[j].index;
                 j++;
             }
         }
         else{//if numeric
             if (atoi(L[i].str) <= atoi(R[j].str)) {
-                sort_array[k].str = strdup(L[i].str);
+                sort_array[k].str = L[i].str;
                 sort_array[k].index = L[i].index;
                 i++;
             }
             else {
-                sort_array[k].str = strdup(R[j].str);
+                sort_array[k].str = R[j].str;
                 sort_array[k].index = R[j].index;
                 j++;
             }
@@ -162,14 +162,14 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
     }
 
     while (i < n1) {
-        sort_array[k].str = strdup(L[i].str);
+        sort_array[k].str = L[i].str;
         sort_array[k].index = L[i].index;
         i++;
         k++;
     }
 
     while (j < n2) {
-        sort_array[k].str = strdup(R[j].str);
+        sort_array[k].str = R[j].str;
         sort_array[k].index = R[j].index;
         j++;
         k++;

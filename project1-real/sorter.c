@@ -221,6 +221,7 @@ void sort_one_file(char* input_path,char* output_path){
       char * tempStr;
       char  tempCell[1024];
       char *dummy = NULL;
+      char * KillerQueen;
       while (token != NULL){
           if(token[strlen(token)-1] == '\n'){
               int len = strlen(token);
@@ -261,7 +262,6 @@ void sort_one_file(char* input_path,char* output_path){
           token = strtok_single(NULL, ",");
       }
       free(dummy);
-
       // create a new node
       // rowNumber starts from 1
       struct node *temp = (struct node*) malloc(sizeof(struct node));
@@ -421,6 +421,7 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path, char* output_path){
             int headerNumber = count_header(inputPath);
 
             if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
+              free(fileNoExtension);
               continue;
             }
 
