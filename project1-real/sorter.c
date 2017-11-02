@@ -22,10 +22,7 @@ static int *pCounter;
 pid_t init_pid;
 char* sort_value_type;
 
-char** hierArray;
-static int* hierArrayCursor;
-static pid_t *pidArray;
-static int *pidArrayCursor;
+
 
 char *strtok_single (char * str, char const * delims) {
     static char  * src = NULL;
@@ -76,8 +73,10 @@ void initDataArray(char* array[dataRow][dataCol],struct node * data){
 
 // check if a string is numeric, 0 -> false, non-zero -> true
 int isNumeric(char* str){
-    if (str == NULL || *str == '\0' || isspace(*str))
-      return 1;
+    if (str == NULL || *str == '\0' || isspace(*str)){
+      return 0;
+    }
+
     char * p;
     strtod (str, &p);
     return *p == '\0'?0:1;
@@ -346,8 +345,9 @@ void sort_one_file(char* input_path,char* output_path){
   int MAXROW=rowNumber-1;
 
   //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
-  if(MAXROW>=0)
+  if(MAXROW>=0){
       mergeSort(sort_array, 0, MAXROW,numeric);
+    }
 
   //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
 
@@ -391,7 +391,7 @@ void sort_one_file(char* input_path,char* output_path){
   fclose(input_file);
 }
 void recur(DIR *pDir, struct dirent *pDirent, char* path, char* output_path){
-    
+
     pid_t pid,fpid=getppid();
     while ((pDirent = readdir(pDir)) != NULL) {
         if (pDirent->d_name[0] == '.'){continue;}
@@ -400,26 +400,29 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path, char* output_path){
           if(path&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
             /*NOTE create path for input and output file, and perform Mergesort on each csv file
             */
-            printf("********** %s\n", output_path);
             int outputLength=0;
             if (strlen(output_path) == 0){
                 outputLength = strlen(path);
             } else {
                 outputLength = strlen(output_path);
             }
+            char  BiteTheDust[1024];
             char  outP[outputLength];
             char  inP[strlen(path)];
             strcpy(outP,output_path);
             strcpy(inP,path);
             char* fileNoExtension = strdup(remove_ext(pDirent->d_name));
-            char * outputPath = strcat(strcat(strcat(outP,"/"),strcat(fileNoExtension,"-sorted")),".csv");
-            char* inputPath = strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv"));
+            strcpy(BiteTheDust,sort_value_type);
+            char outputPath[1024];
+             strcpy(outputPath,strcat(strcat(
+               strcat(strcat(outP,"/"),strcat(fileNoExtension,"-sorted<")),BiteTheDust),">.csv"));
+            char inputPath[1024];
+            strcpy(inputPath,strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv")));
             int headerNumber = count_header(inputPath);
 
-            // if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
-            //   //printf("%d headers for [%s], we need 28\n",headerNumber,inputPath);
-            //   continue;
-            // }
+            if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
+              continue;
+            }
 
             fpid = fork();
             if(fpid<0){}
@@ -434,25 +437,7 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path, char* output_path){
               break;
             }
             else{//parent
-              int counter=0;
-              int sum =0;
-              for(;counter<*pidArrayCursor;counter++){
-                sum+=pidArray[counter];
-                  if(getpid()<=init_pid+pidArray[counter]){
-                    pidArray[*pidArrayCursor+1]=pidArray[*pidArrayCursor+1]+1;
-                    //printf("%d\n",pidArray[*pidArrayCursor+1] );
 
-                    //*pidArrayCursor = *pidArrayCursor+1;
-                    break;
-                  }
-              }
-              if(getpid()>init_pid+pidArray[*pidArrayCursor]){
-                printf("before %d \n",*pidArrayCursor);
-                *pidArrayCursor = *pidArrayCursor+1;
-                printf("after %d \n",*pidArrayCursor);
-              }
-
-              printf("parent : %d | current : %d | file :%s\n",getpid(),fpid,pDirent->d_name);
 
               free(fileNoExtension);
               continue;
@@ -486,16 +471,16 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path, char* output_path){
                 // *pidArrayCursor=*pidArrayCursor+2;
                 // hierArray[*hierArrayCursor]=pDirent->d_name;
                 // *hierArrayCursor=*hierArrayCursor+1;
-                int counter=0;
-                for(;counter<*pidArrayCursor;counter++){
-                    if(getpid()<=init_pid+pidArray[counter]){
-                      pidArray[*pidArrayCursor+1]+=1;
-                      printf("%d\n",pidArray[*pidArrayCursor+1] );
-                      //*pidArrayCursor = *pidArrayCursor+1;
-                      break;
-                    }
-                }
-                printf("parent : %d | current : %d | file :%s\n",getpid(),pid, pDirent->d_name);
+                // int counter=0;
+                // for(;counter<*pidArrayCursor;counter++){
+                //     if(getpid()<=init_pid+pidArray[counter]){
+                //       pidArray[*pidArrayCursor+1]+=1;
+                //       printf("%d\n",pidArray[*pidArrayCursor+1] );
+                //       //*pidArrayCursor = *pidArrayCursor+1;
+                //       break;
+                //     }
+                // }
+                // printf("parent : %d | current : %d | file :%s\n",getpid(),pid, pDirent->d_name);
             }
         }
     }
@@ -517,15 +502,9 @@ int main(int c, char *v[]){
     //
     // hierArray =(char**) malloc(256 * sizeof (char*));
     //
-    pidArray = mmap(NULL, sizeof *pidArray * 256, PROT_READ | PROT_WRITE,
-                            MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    pidArray[0]=0;
-    pidArrayCursor= mmap(NULL, sizeof *pidArrayCursor, PROT_READ | PROT_WRITE,
-                            MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    *pidArrayCursor=0;
+
 
     getcwd(cwd, sizeof(cwd));
-    fprintf(stdout, "Current working dir: %s\n", cwd);
     // if(c==1){
     //   if (getcwd(cwd, sizeof(cwd)) != NULL){
     //   //fprintf(stdout, "Current working dir: %s\n", cwd);
@@ -548,7 +527,7 @@ int main(int c, char *v[]){
     char* output_path = NULL;
     char newStr[300];
     char newStr2[300];
-    
+
     if (c == 3){
         // current dir
         path_tmp[0] = '.';
@@ -568,7 +547,7 @@ int main(int c, char *v[]){
             else{
 
                 strcpy(pat,v[4]+matchingIndex);
-                
+
                 if(strlen(pat)<=1) {
                     if(strlen(pat)==0)
                         pat[0]='.';
@@ -583,7 +562,7 @@ int main(int c, char *v[]){
                         for (; loopindex < strlen(pat)+1; loopindex++){
                             newStr[loopindex] = pat[loopindex-1];
                         }
-                        
+
                         loopindex = 0;
                         for (; loopindex < strlen(newStr); loopindex++){
                             pat[loopindex] = newStr[loopindex];
@@ -591,7 +570,7 @@ int main(int c, char *v[]){
                     }
                 }
             }
-            
+
             path = pat;
         }else if(strcmp(v[3],"-o")==0){
             // -o
@@ -609,7 +588,7 @@ int main(int c, char *v[]){
             else{
 
                 strcpy(pat,v[4]+matchingIndex);
-                
+
                 if(strlen(pat)<=1) {
                     if(strlen(pat)==0)
                         pat[0]='.';
@@ -624,7 +603,7 @@ int main(int c, char *v[]){
                         for (; loopindex < strlen(pat)+1; loopindex++){
                             newStr2[loopindex] = pat[loopindex-1];
                         }
-                        
+
                         loopindex = 0;
                         for (; loopindex < strlen(newStr2); loopindex++){
                             pat[loopindex] = newStr2[loopindex];
@@ -635,7 +614,7 @@ int main(int c, char *v[]){
             output_path = pat;
 
         }
-        
+
     } else if (c == 7){
           //-d
             char pat[300];
@@ -650,7 +629,7 @@ int main(int c, char *v[]){
             else{
 
                 strcpy(pat,v[4]+matchingIndex);
-                
+
                 if(strlen(pat)<=1) {
                     if(strlen(pat)==0)
                         pat[0]='.';
@@ -664,7 +643,7 @@ int main(int c, char *v[]){
                         for (; loopindex < strlen(pat)+1; loopindex++){
                             newStr[loopindex] = pat[loopindex-1];
                         }
-                        
+
                         loopindex = 0;
                         for (; loopindex < strlen(newStr); loopindex++){
                             pat[loopindex] = newStr[loopindex];
@@ -672,7 +651,7 @@ int main(int c, char *v[]){
                     }
                 }
             }
-            
+
             path = pat;
         //======================================
 
@@ -689,7 +668,7 @@ int main(int c, char *v[]){
             else{
 
                 strcpy(pato,v[6]+matchingIndex);
-                
+
                 if(strlen(pato)<=1) {
                     if(strlen(pato)==0)
                         pato[0]='.';
@@ -704,7 +683,7 @@ int main(int c, char *v[]){
                         for (; loopindex < strlen(pato)+1; loopindex++){
                             newStr2[loopindex] = pato[loopindex-1];
                         }
-                        
+
                         loopindex = 0;
                         for (; loopindex < strlen(newStr2); loopindex++){
                             pato[loopindex] = newStr2[loopindex];
@@ -736,14 +715,14 @@ int main(int c, char *v[]){
       printf("\nTotal Child Processes Number: %d  \n",*pCounter);
 
       //
-      int counter=0;
-      for(;counter<*pidArrayCursor;counter++){
-        printf("p : %d \n",pidArray[counter]);
-      }
+      // int counter=0;
+      // for(;counter<*pidArrayCursor;counter++){
+      //   printf("p : %d \n",pidArray[counter]);
+      // }
       //
       // free(hierArray);
-      munmap(pidArray, sizeof *pidArray);
-      munmap(pidArrayCursor, sizeof *pidArrayCursor);
+      // munmap(pidArray, sizeof *pidArray);
+      // munmap(pidArrayCursor, sizeof *pidArrayCursor);
       // munmap(hierArrayCursor, sizeof *hierArrayCursor);
       munmap(pCounter, sizeof *pCounter);
     }
