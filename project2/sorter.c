@@ -15,7 +15,7 @@
 
 #define EMPTY_STRING ""
 #define VALID_MOVIE_HEADER_NUMBER 28
-
+#define VALID_USAGE   "invalid argument numbers\ncorrect usage :./sample -c <column> (other args are optional after this)-d<directory to start> -o<outputdirectory>"
 //global
 static int *pCounter;
 
@@ -493,9 +493,7 @@ void recur(DIR *pDir, struct dirent *pDirent, char* path, char* output_path){
 int main(int c, char *v[]){
 
     if(c<3){
-      printf("invalid argument numbers\n
-       correct usage :./sample -c <column>
-       (other args are optional after this)-d<directory to start> -o<outputdirectory>")
+      printf("%s",VALID_USAGE);
     }
     struct dirent *pDirent;
     DIR *pDir;
@@ -525,8 +523,7 @@ int main(int c, char *v[]){
     here should code scanning current directory that is
     when -d is optional
     */
-    // get the sort value type
-    sort_value_type = v[2];
+
 
     char path_tmp[300];
     char* path;
@@ -537,25 +534,41 @@ int main(int c, char *v[]){
     char newStr[300];
     char newStr2[300];
 
+    int cIndex=0;
+    int secIndex=0;
+    int trdIndex=0;
     if (c == 3){
         // current dir
         path_tmp[0] = '.';
         path = path_tmp;
     } else if (c == 5){
-        if(strcmp(v[3],"-d")==0){
+        if(strcmp(v[1],"-c")==0){
+          cIndex=1;
+          secIndex=3;
+        }
+        else if(strcmp(v[3],"-c")==0){
+          cIndex=3;
+          secIndex=1;
+        }
+        else{
+        printf("%s",VALID_USAGE);
+        return 0;
+        }
+
+        if(strcmp(v[secIndex],"-d")==0){
             // -d
             char pat[300];
             int matchingIndex;
-            if(strstr(v[4],cwd)!=NULL){
+            if(strstr(v[secIndex+1],cwd)!=NULL){
                 matchingIndex = strlen(cwd);
                 }
             else matchingIndex = 0 ;
 
-            if(strlen(v[4])==matchingIndex)
+            if(strlen(v[secIndex+1])==matchingIndex)
                     pat[0]='.';
             else{
 
-                strcpy(pat,v[4]+matchingIndex);
+                strcpy(pat,v[secIndex+1]+matchingIndex);
 
                 if(strlen(pat)<=1) {
                     if(strlen(pat)==0)
@@ -581,22 +594,22 @@ int main(int c, char *v[]){
             }
 
             path = pat;
-        }else if(strcmp(v[3],"-o")==0){
+        }else if(strcmp(v[secIndex],"-o")==0){
             // -o
             path_tmp[0] = '.';
             path = path_tmp;
             char pat[300];
             int matchingIndex;
-            if(strstr(v[4],cwd)!=NULL){
+            if(strstr(v[secIndex+1],cwd)!=NULL){
                 matchingIndex = strlen(cwd);
                 }
             else matchingIndex = 0 ;
 
-            if(strlen(v[4])==matchingIndex)
+            if(strlen(v[secIndex+1])==matchingIndex)
                     pat[0]='.';
             else{
 
-                strcpy(pat,v[4]+matchingIndex);
+                strcpy(pat,v[secIndex+1]+matchingIndex);
 
                 if(strlen(pat)<=1) {
                     if(strlen(pat)==0)
@@ -625,19 +638,32 @@ int main(int c, char *v[]){
         }
 
     } else if (c == 7){
-          //-d
+            int argsGroup[3] ={1,3,5};
+            for(int init=0;init<3;init++){
+              if(strcmp(v[argsGroup[init]],"-c")==0){
+                cIndex=argsGroup[init];
+              }
+              else if(strcmp(v[argsGroup[init]],"-d")==0){
+                secIndex=argsGroup[init];
+              }
+              else if(strcmp(v[argsGroup[init]],"-o")==0){
+                trdIndex=argsGroup[init];
+              }
+            }
+
+            //-d
             char pat[300];
             int matchingIndex;
-            if(strstr(v[4],cwd)!=NULL){
+            if(strstr(v[secIndex+1],cwd)!=NULL){
                 matchingIndex = strlen(cwd);
                 }
             else matchingIndex = 0 ;
 
-            if(strlen(v[4])==matchingIndex)
+            if(strlen(v[secIndex+1])==matchingIndex)
                     pat[0]='.';
             else{
 
-                strcpy(pat,v[4]+matchingIndex);
+                strcpy(pat,v[secIndex+1]+matchingIndex);
 
                 if(strlen(pat)<=1) {
                     if(strlen(pat)==0)
@@ -667,16 +693,16 @@ int main(int c, char *v[]){
         // -o
             char pato[300];
             matchingIndex=0;
-            if(strstr(v[6],cwd)!=NULL){
+            if(strstr(v[trdIndex+1],cwd)!=NULL){
                 matchingIndex = strlen(cwd);
                 }
             else matchingIndex = 0 ;
 
-            if(strlen(v[6])==matchingIndex)
+            if(strlen(v[trdIndex+1])==matchingIndex)
                     pato[0]='.';
             else{
 
-                strcpy(pato,v[6]+matchingIndex);
+                strcpy(pato,v[trdIndex+1]+matchingIndex);
 
                 if(strlen(pato)<=1) {
                     if(strlen(pato)==0)
@@ -703,6 +729,9 @@ int main(int c, char *v[]){
             output_path = pato;
 
     }
+
+    // get the sort value type
+    sort_value_type = v[cIndex+1];
 
     pDir = opendir (path);
     printf("Initial PID : %d\n", (init_pid=getpid()));
