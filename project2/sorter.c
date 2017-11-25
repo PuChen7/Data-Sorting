@@ -179,23 +179,28 @@ int count_header(char* input_path){
 
 void *sort_one_file(void* arg_path){
     //struct ArgsForSorting* sortArgs = (struct ArgsForSorting*) argument;
-
+    char* tmp_path = arg_path;
+    output_path = tmp_path;
+    printf("sort one file: %s\n", tmp_path);
     FILE    *input_file;
     FILE    *output_file;
+    output_path = "./tmp4";
+    printf("Output file %s\n", output_path);
     output_file = fopen(output_path, "w");
     if (output_file == NULL){
             fprintf(stderr, "Error : Failed to open output_file - %s\n", strerror(errno));
             fclose(output_file);
             return NULL;
     }
-    input_file = fopen(arg_path, "r");
+    input_file = fopen(tmp_path, "r");
+    
     if (input_file == NULL){
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
         fclose(output_file);
         fclose(input_file);
         return NULL;
     }
-
+    
     // head of the Linked List
     struct node *head = NULL;
     struct node *prev = NULL;
@@ -205,11 +210,12 @@ void *sort_one_file(void* arg_path){
     int value_type_number;    // hold the number of value types(column numbers).
     char* headerLine=NULL;   // hold the first line of the csv file, which is the value types.
     int isFirstElement = 0; // mark the first element in LL
-
+    
     // loop for reading the csv file line by line.
     while (fgets(line, 1024, input_file)){
+        printf("TEST\n");
         rowNumber++;
-
+        
         char* tmp = strdup(line);
         // first row
         // Returns first token
@@ -228,7 +234,7 @@ void *sort_one_file(void* arg_path){
             free(tmp);
             continue;
         }
-
+        
         /* malloc array for holding tokens.*/
         char** new_array = malloc(value_type_number * sizeof(char*));
 
@@ -284,6 +290,7 @@ void *sort_one_file(void* arg_path){
             token = strtok_single(NULL, ",");
         }
         free(dummy);
+        
         // create a new node
         // rowNumber starts from 1
         struct node *temp = (struct node*) malloc(sizeof(struct node));
@@ -427,8 +434,9 @@ void *recur(void *arg_path){
     }
 
     struct dirent *pDirent;
-
+   
     while (pDirent =readdir(dir)){
+        
         if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0 || pDirent->d_name[0] == '.')
             continue;
 
@@ -442,9 +450,10 @@ void *recur(void *arg_path){
         //thread_path[localcounter] = strcat(strcat(tmp_path,"/"),pDirent->d_name);
         sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
         pthread_mutex_unlock(&path_lock);
-        
+        printf("pDirent: %s\n", pDirent->d_name);
         // if it is a directory, continue traversing
         if (pDirent->d_type == DT_DIR){
+             
             /*
             pthread_mutex_lock(&path2_lock);
             strcat(recurArgs->path, "/");
@@ -458,7 +467,6 @@ void *recur(void *arg_path){
         } else {
             // if it is a new csv, sort it. 
             if(thread_path[localcounter]&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
-                
 
                 pthread_mutex_lock(&csv_lock);
                 
@@ -485,18 +493,19 @@ void *recur(void *arg_path){
                 char inputPath[1024];
                 strcpy(inputPath,strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv")));
                 int headerNumber = count_header(inputPath);
-                
+                /*
                 if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
                     free(fileNoExtension);
                     continue;
                 }
+                */
                 //struct ArgsForSorting *sortArgs = malloc(sizeof(struct ArgsForSorting));
                 //sortArgs->input_path = inputPath;
                 //sortArgs->output_path = outputPath;
                 
                 pthread_mutex_unlock(&csv_lock);
-                
-                pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
+                //sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
+                pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&pDirent->d_name);
             }
             
         }
@@ -575,6 +584,7 @@ int main(int c, char *v[]){
         path_tmp[0] = '.';
         path = path_tmp;
     } else if (c == 5){
+        
         if(strcmp(v[1],"-c")==0){
           cIndex=1;
           secIndex=3;
@@ -587,7 +597,7 @@ int main(int c, char *v[]){
         printf("%s",VALID_USAGE);
         return 0;
         }
-
+        
         if(strcmp(v[secIndex],"-d")==0){
             // -d
             char pat[300];
@@ -627,7 +637,9 @@ int main(int c, char *v[]){
             }
 
             path = pat;
+            
         }else if(strcmp(v[secIndex],"-o")==0){
+            
             // -o
             path_tmp[0] = '.';
             path = path_tmp;
@@ -667,7 +679,7 @@ int main(int c, char *v[]){
                 }
             }
             output_path = pat;
-
+            
         }
 
     } else if (c == 7){
@@ -760,7 +772,7 @@ int main(int c, char *v[]){
                 }
             }
             output_path = pato;
-
+            
     }
 
     // get the sort value type
