@@ -180,7 +180,7 @@ int count_header(char* input_path){
 void *sort_one_file(void* arg_path){
     //struct ArgsForSorting* sortArgs = (struct ArgsForSorting*) argument;
     char* tmp_path = arg_path;
-    output_path = tmp_path;
+    //output_path = tmp_path;
     printf("sort one file: %s\n", tmp_path);
     FILE    *input_file;
     FILE    *output_file;
@@ -195,7 +195,9 @@ void *sort_one_file(void* arg_path){
     input_file = fopen(tmp_path, "r");
     
     if (input_file == NULL){
+        printf("hahahaha\n");
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
+       
         fclose(output_file);
         fclose(input_file);
         return NULL;
@@ -210,28 +212,35 @@ void *sort_one_file(void* arg_path){
     int value_type_number;    // hold the number of value types(column numbers).
     char* headerLine=NULL;   // hold the first line of the csv file, which is the value types.
     int isFirstElement = 0; // mark the first element in LL
-    
+    //fgets(line, 1024, input_file);
     // loop for reading the csv file line by line.
     while (fgets(line, 1024, input_file)){
-        printf("TEST\n");
+        printf("TEST %s\n", line);
         rowNumber++;
         
         char* tmp = strdup(line);
+        
         // first row
         // Returns first token
         char *token = strtok_single(tmp, ",");
+        
         if(rowNumber==0){
+            
             headerLine = strdup(line);
             value_type_number = 0;
+            
             while (token != NULL){
+                
                 if(token[strlen(token)-1] == '\n'){
                     int len = strlen(token);
                     token[len-1]='\0';//make it end of string
                 }
                 token = strtok_single(NULL, ",");
+                
                 value_type_number++;    // update the number of columns(value types).
             }
             free(tmp);
+            
             continue;
         }
         
@@ -436,7 +445,6 @@ void *recur(void *arg_path){
     struct dirent *pDirent;
    
     while (pDirent =readdir(dir)){
-        
         if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0 || pDirent->d_name[0] == '.')
             continue;
 
@@ -450,7 +458,6 @@ void *recur(void *arg_path){
         //thread_path[localcounter] = strcat(strcat(tmp_path,"/"),pDirent->d_name);
         sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
         pthread_mutex_unlock(&path_lock);
-        printf("pDirent: %s\n", pDirent->d_name);
         // if it is a directory, continue traversing
         if (pDirent->d_type == DT_DIR){
              
@@ -462,7 +469,6 @@ void *recur(void *arg_path){
             strcat(recurArgs->path,pDirent->d_name);
             pthread_mutex_unlock(&path2_lock);
             */
-
             pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
         } else {
             // if it is a new csv, sort it. 
@@ -486,6 +492,7 @@ void *recur(void *arg_path){
                 
                 strcpy(outP,output_path);
                 strcpy(inP,thread_path[localcounter]);
+                
                 char* fileNoExtension = strdup(remove_ext(pDirent->d_name));
                 strcpy(BiteTheDust,sort_value_type);
                 char outputPath[1024];
@@ -493,6 +500,7 @@ void *recur(void *arg_path){
                 char inputPath[1024];
                 strcpy(inputPath,strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv")));
                 int headerNumber = count_header(inputPath);
+                output_path = outputPath;
                 /*
                 if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
                     free(fileNoExtension);
@@ -504,8 +512,8 @@ void *recur(void *arg_path){
                 //sortArgs->output_path = outputPath;
                 
                 pthread_mutex_unlock(&csv_lock);
-                //sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
-                pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&pDirent->d_name);
+                
+                pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
             }
             
         }
