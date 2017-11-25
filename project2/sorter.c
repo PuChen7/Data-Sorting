@@ -41,8 +41,8 @@ struct ArgsForRecur{
     char* output_path;
 };
 */
-char thread_path[1000][500];
 char* output_path;
+char thread_path[1000][500];
 #define VALID_MOVIE_HEADER_NUMBER 28
 
 
@@ -183,22 +183,13 @@ void *sort_one_file(void* arg_path){
     //output_path = tmp_path;
     printf("sort one file: %s\n", tmp_path);
     FILE    *input_file;
-    FILE    *output_file;
-    output_path = "./tmp4";
-    printf("Output file %s\n", output_path);
-    output_file = fopen(output_path, "w");
-    if (output_file == NULL){
-            fprintf(stderr, "Error : Failed to open output_file - %s\n", strerror(errno));
-            fclose(output_file);
-            return NULL;
-    }
+       
     input_file = fopen(tmp_path, "r");
     
     if (input_file == NULL){
         printf("hahahaha\n");
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
        
-        fclose(output_file);
         fclose(input_file);
         return NULL;
     }
@@ -215,7 +206,6 @@ void *sort_one_file(void* arg_path){
     //fgets(line, 1024, input_file);
     // loop for reading the csv file line by line.
     while (fgets(line, 1024, input_file)){
-        printf("TEST %s\n", line);
         rowNumber++;
         
         char* tmp = strdup(line);
@@ -387,8 +377,8 @@ void *sort_one_file(void* arg_path){
         count=0;
         for(;count<value_type_number;count++){
             count==(value_type_number-1)?
-            fprintf(output_file, "%s\n", headerArray[count])
-            :fprintf(output_file, "%s,", headerArray[count]);
+            printf("%s\n", headerArray[count])
+            :printf("%s,", headerArray[count]);
 
         }
         //print content
@@ -396,10 +386,11 @@ void *sort_one_file(void* arg_path){
         for(;count<MAXROW+1;count++){
             for(i=0;i<dataCol;i++){
                 i==(dataCol-1)?
-                fprintf(output_file, "%s\n",dataArray[sort_array[count].index][i])
-                :fprintf(output_file, "%s,",dataArray[sort_array[count].index][i]);
+                printf("%s\n",dataArray[sort_array[count].index][i])
+                :printf("%s,",dataArray[sort_array[count].index][i]);
             }//end of line
         }
+        
         free(sort_array);
     }
     // free Linked List
@@ -417,7 +408,6 @@ void *sort_one_file(void* arg_path){
 
     free(temp);
     free(headerLine);
-    fclose(output_file);
     fclose(input_file);
     return NULL;
 }
@@ -476,15 +466,7 @@ void *recur(void *arg_path){
 
                 pthread_mutex_lock(&csv_lock);
                 
-                int outputLength=0;
-                if (output_path == NULL){
-                    
-                    outputLength = sizeof(thread_path[localcounter])/sizeof(thread_path[0]);
-                    
-                } else {
-                    outputLength = strlen(output_path);
-                }
-                
+                /*
                 char  BiteTheDust[1024];
                 char  outP[outputLength];
                 char  inP[strlen(thread_path[localcounter])];
@@ -501,7 +483,7 @@ void *recur(void *arg_path){
                 strcpy(inputPath,strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv")));
                 int headerNumber = count_header(inputPath);
                 output_path = outputPath;
-                /*
+            
                 if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
                     free(fileNoExtension);
                     continue;
@@ -584,7 +566,7 @@ int main(int c, char *v[]){
     char newStr[300];
     char newStr2[300];
 
-    int cIndex=0;
+    int cIndex=1;
     int secIndex=0;
     int trdIndex=0;
     if (c == 3){
