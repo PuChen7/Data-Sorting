@@ -26,9 +26,9 @@ int pathcounter = 0;
 
 pthread_mutex_t path_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t threadlock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t path2_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
 struct ArgsForSorting{
@@ -155,6 +155,7 @@ int count_header(char* input_path){
   char * headerLine=NULL;
   char line[1024];
   while (fgets(line, 1024, input_file)){
+      
       char* tmp = line;
       char *token = strtok_single(tmp, ",");
       if(rowNumber==0){
@@ -178,6 +179,8 @@ int count_header(char* input_path){
 }
 
 void *sort_one_file(void* arg_path){
+    printf("tid %d\n", pthread_self());
+    //pthread_mutex_lock(&sort_lock);
     //struct ArgsForSorting* sortArgs = (struct ArgsForSorting*) argument;
     char* tmp_path = arg_path;
     //output_path = tmp_path;
@@ -206,6 +209,7 @@ void *sort_one_file(void* arg_path){
     //fgets(line, 1024, input_file);
     // loop for reading the csv file line by line.
     while (fgets(line, 1024, input_file)){
+        
         rowNumber++;
         
         char* tmp = strdup(line);
@@ -230,7 +234,6 @@ void *sort_one_file(void* arg_path){
                 value_type_number++;    // update the number of columns(value types).
             }
             free(tmp);
-            
             continue;
         }
         
@@ -315,20 +318,25 @@ void *sort_one_file(void* arg_path){
         free(new_array);
         free(tmp);
     }
-
+    
     char* headerArray[value_type_number];   // this array hold the first row.
     initValueTypesArray(headerArray,value_type_number,headerLine);
-
+    
     //resuage of temp to 'copy' a head, then pass it to initDataArray to store 2d data array
     struct node *temp = (struct node*) malloc(sizeof(struct node));
     temp-> line_array = head->line_array;
     temp-> next = head -> next;
+    
+    
     //[row][column]
     dataCol= value_type_number;
     dataRow = rowNumber;
+    
+    //printf("TEST %s\n", temp-> next->next->next->next->next->next->next->next->next->next->next->next->next->next->next->line_array[1]);
     char* dataArray[dataRow][dataCol];
+    
     initDataArray(dataArray,temp);
-
+    
     /* sorintg */
     // first need to decide which column to sort. Do the search on headerArray.
     int i = 0;
@@ -354,9 +362,9 @@ void *sort_one_file(void* arg_path){
         int numericFlag = 0;
 
         while (count < rowNumber){
-                sort_array[count].index = count;
-                sort_array[count].str = dataArray[count][i];
-                numericFlag += isNumeric(sort_array[count].str);
+            sort_array[count].index = count;
+            sort_array[count].str = dataArray[count][i];
+            numericFlag += isNumeric(sort_array[count].str);
             count++;
         }
 
@@ -367,12 +375,12 @@ void *sort_one_file(void* arg_path){
         // if the string is a number, then sort based on the value of the number
         // NOTE: numeric 0:false 1:true
         int MAXROW=rowNumber-1;
+        
 
         //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
         if(MAXROW>=0){
             mergeSort(sort_array, 0, MAXROW,numeric);
         }
-
         //print header
         count=0;
         for(;count<value_type_number;count++){
@@ -409,6 +417,7 @@ void *sort_one_file(void* arg_path){
     free(temp);
     free(headerLine);
     fclose(input_file);
+    //pthread_mutex_unlock(&sort_lock);
     return NULL;
 }
 
@@ -450,15 +459,6 @@ void *recur(void *arg_path){
         pthread_mutex_unlock(&path_lock);
         // if it is a directory, continue traversing
         if (pDirent->d_type == DT_DIR){
-             
-            /*
-            pthread_mutex_lock(&path2_lock);
-            strcat(recurArgs->path, "/");
-            printf("name: %s\n", pDirent->d_name);
-            printf("recurArgs->path: %s\n", recurArgs->path);
-            strcat(recurArgs->path,pDirent->d_name);
-            pthread_mutex_unlock(&path2_lock);
-            */
             pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
         } else {
             // if it is a new csv, sort it. 
@@ -492,6 +492,8 @@ void *recur(void *arg_path){
                 //struct ArgsForSorting *sortArgs = malloc(sizeof(struct ArgsForSorting));
                 //sortArgs->input_path = inputPath;
                 //sortArgs->output_path = outputPath;
+
+                int headerNumber = count_header(thread_path[localcounter]);
                 
                 pthread_mutex_unlock(&csv_lock);
                 
@@ -502,6 +504,7 @@ void *recur(void *arg_path){
         waittid[countthread++] = current_tid;
         pthread_mutex_lock(&threadlock);
         tid[tidindex++] = current_tid;
+        
         pthread_mutex_unlock(&threadlock);
         // pthread_join(currtid, NULL);
         if (countthread == chunk) {
@@ -511,12 +514,10 @@ void *recur(void *arg_path){
             joined = countthread;
             chunk += 512;
         }
-        
-        for (i = joined; i < countthread; i++) {
-            pthread_join(waittid[i], NULL);
-        }
     }
-    
+    for (i = joined; i < countthread; i++) {
+        pthread_join(waittid[i], NULL);
+    }
     closedir(dir);
 }
 
@@ -537,25 +538,9 @@ int main(int c, char *v[]){
                         MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     *pCounter = 0;
 
-    // hierArrayCursor = mmap(NULL, sizeof *hierArrayCursor, PROT_READ | PROT_WRITE,
-    //                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    // *hierArrayCursor = 0;
-    //
-    // hierArray =(char**) malloc(256 * sizeof (char*));
-    //
-
+    
     getcwd(cwd, sizeof(cwd));
-    // if(c==1){
-    //   if (getcwd(cwd, sizeof(cwd)) != NULL){
-    //   //fprintf(stdout, "Current working dir: %s\n", cwd);
-    //   }
-    //   else
-    //   perror("getcwd() error");
-    // }
-    /*
-    here should code scanning current directory that is
-    when -d is optional
-    */
+    
 
     char path_tmp[300];
     char* path;
@@ -791,6 +776,10 @@ int main(int c, char *v[]){
         printf("%d,",wpid);
         *pCounter+=1;
     }
+    pthread_mutex_destroy(&path_lock);
+    pthread_mutex_destroy(&threadlock);
+    pthread_mutex_destroy(&csv_lock);
+    pthread_mutex_destroy(&count_lock);
 
     return 0;
 }
