@@ -22,7 +22,7 @@ static int *pCounter;
 char* sort_value_type;
 int tidindex = 0;
 pthread_t tid[10000];
-int path_count = 0;
+int pathcounter = 0;
 
 pthread_mutex_t path_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t threadlock = PTHREAD_MUTEX_INITIALIZER;
@@ -30,6 +30,7 @@ pthread_mutex_t path2_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/*
 struct ArgsForSorting{
     char* input_path;
     char* output_path;
@@ -39,7 +40,8 @@ struct ArgsForRecur{
     char path[1000][500];
     char* output_path;
 };
-
+*/
+char thread_path[1000][500];
 char *output_path = NULL;
 #define VALID_MOVIE_HEADER_NUMBER 28
 
@@ -175,18 +177,18 @@ int count_header(char* input_path){
   return value_type_number;
 }
 
-void *sort_one_file(void* argument){
-    struct ArgsForSorting* sortArgs = (struct ArgsForSorting*) argument;
+void *sort_one_file(void* arg_path){
+    //struct ArgsForSorting* sortArgs = (struct ArgsForSorting*) argument;
 
     FILE    *input_file;
     FILE    *output_file;
-    output_file = fopen(sortArgs->output_path, "w");
+    output_file = fopen(output_path, "w");
     if (output_file == NULL){
             fprintf(stderr, "Error : Failed to open output_file - %s\n", strerror(errno));
             fclose(output_file);
             return NULL;
     }
-    input_file = fopen(sortArgs->input_path, "r");
+    input_file = fopen(arg_path, "r");
     if (input_file == NULL){
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
         fclose(output_file);
@@ -406,16 +408,16 @@ void *sort_one_file(void* argument){
 
 
 // Recursively call thread to sort or traverse
-void *recur(void *argument){
-    
+void *recur(void *arg_path){
+    //printf("path: %s\n", arg_path);
+    char* tmp_path = arg_path;
     pthread_t waittid[10000];
     int countthread = 0, i, localcounter = 0, chunk = 512, joined = 0;
 
-    struct ArgsForRecur* recurArgs = (struct ArgsForRecur*) argument;
-    printf("New path: %s\n", recurArgs->path);
+    //struct ArgsForRecur* recurArgs = (struct ArgsForRecur*) argument;
 
-    DIR *dir = opendir(recurArgs->path);
-    
+    DIR *dir = opendir(tmp_path);
+    //printf("tmp_path: %s\n", tmp_path);
     pthread_t current_tid;
 
     if (dir == NULL){
@@ -436,7 +438,8 @@ void *recur(void *argument){
         // update path
         
         pthread_mutex_lock(&path_lock);
-        recurArgs->path = strcat(strcat(recurArgs->path,"/"),pDirent->d_name);
+        //thread_path[localcounter] = strcat(strcat(tmp_path,"/"),pDirent->d_name);
+        sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
         pthread_mutex_unlock(&path_lock);
         
         // if it is a directory, continue traversing
@@ -449,24 +452,32 @@ void *recur(void *argument){
             strcat(recurArgs->path,pDirent->d_name);
             pthread_mutex_unlock(&path2_lock);
             */
-            printf("recurArgs->path: %s\n", recurArgs->path);
 
-            pthread_create(&current_tid, NULL, (void *)recur, (void *)recurArgs);
+            pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
         } else {
             // if it is a new csv, sort it. 
-            if(recurArgs->path&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
+            if(thread_path[localcounter]&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
+                
+
                 pthread_mutex_lock(&csv_lock);
+                
                 int outputLength=0;
-                if (strlen(recurArgs->output_path) == 0){
-                    outputLength = strlen(recurArgs->path);
+                if (output_path == NULL){
+                    
+                    outputLength = sizeof(thread_path[localcounter])/sizeof(thread_path[0]);
+                    
                 } else {
-                    outputLength = strlen(recurArgs->output_path);
+                    outputLength = strlen(output_path);
                 }
+                
                 char  BiteTheDust[1024];
                 char  outP[outputLength];
-                char  inP[strlen(recurArgs->path)];
-                strcpy(outP,recurArgs->output_path);
-                strcpy(inP,recurArgs->path);
+                char  inP[strlen(thread_path[localcounter])];
+                
+                printf("test output_path: %s\n", output_path);
+                strcpy(outP,output_path);
+                printf("Test\n");
+                strcpy(inP,thread_path[localcounter]);
                 char* fileNoExtension = strdup(remove_ext(pDirent->d_name));
                 strcpy(BiteTheDust,sort_value_type);
                 char outputPath[1024];
@@ -479,32 +490,33 @@ void *recur(void *argument){
                     free(fileNoExtension);
                     continue;
                 }
-                struct ArgsForSorting *sortArgs = malloc(sizeof(struct ArgsForSorting));
-                sortArgs->input_path = inputPath;
-                sortArgs->output_path = outputPath;
+                //struct ArgsForSorting *sortArgs = malloc(sizeof(struct ArgsForSorting));
+                //sortArgs->input_path = inputPath;
+                //sortArgs->output_path = outputPath;
                 
                 pthread_mutex_unlock(&csv_lock);
-                pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)sortArgs);
+                pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
             }
             
         }
-    }
-    waittid[countthread++] = current_tid;
-    pthread_mutex_lock(&threadlock);
-    tid[tidindex++] = current_tid;
-    pthread_mutex_unlock(&threadlock);
-    // pthread_join(currtid, NULL);
-    if (countthread == chunk) {
+        waittid[countthread++] = current_tid;
+        pthread_mutex_lock(&threadlock);
+        tid[tidindex++] = current_tid;
+        pthread_mutex_unlock(&threadlock);
+        // pthread_join(currtid, NULL);
+        if (countthread == chunk) {
+            for (i = joined; i < countthread; i++) {
+                pthread_join(waittid[i], NULL);
+            }
+            joined = countthread;
+            chunk += 512;
+        }
+        
         for (i = joined; i < countthread; i++) {
             pthread_join(waittid[i], NULL);
         }
-        joined = countthread;
-        chunk += 512;
     }
     
-    for (i = joined; i < countthread; i++) {
-        pthread_join(waittid[i], NULL);
-    }
     closedir(dir);
 }
 
@@ -676,7 +688,7 @@ int main(int c, char *v[]){
             int matchingIndex;
             if(strstr(v[secIndex+1],cwd)!=NULL){
                 matchingIndex = strlen(cwd);
-                }
+            }
             else matchingIndex = 0 ;
 
             if(strlen(v[secIndex+1])==matchingIndex)
@@ -752,19 +764,24 @@ int main(int c, char *v[]){
 
     // get the sort value type
     sort_value_type = v[cIndex+1];
-
+/*
     pDir = opendir (path);
     if (output_path == NULL){
         output_path = path;
     }
+*/
 
-
-    struct ArgsForRecur *recurArgs = malloc(1000*sizeof(char));
-    recurArgs->path = strdup(path);
+    //struct ArgsForRecur *recurArgs = malloc(1000*sizeof(char));
+    //recurArgs->path = strdup(path);
     
-    recurArgs->output_path = strdup(output_path);
-
-    recur((void *)recurArgs);
+    //recurArgs->output_path = strdup(output_path);
+    char tmp_path_argIn[500] = ".";
+    printf("out: %s\n", output_path);
+    if (output_path == NULL){
+        printf("inside: %s\n", path);
+        output_path = path;
+    }
+    recur((void *)tmp_path_argIn);
     
     int status = 0;
     pid_t wpid;
