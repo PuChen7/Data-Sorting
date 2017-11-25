@@ -42,7 +42,7 @@ struct ArgsForRecur{
 };
 */
 char thread_path[1000][500];
-char *output_path = NULL;
+char* output_path;
 #define VALID_MOVIE_HEADER_NUMBER 28
 
 
@@ -409,8 +409,9 @@ void *sort_one_file(void* arg_path){
 
 // Recursively call thread to sort or traverse
 void *recur(void *arg_path){
-    //printf("path: %s\n", arg_path);
     char* tmp_path = arg_path;
+    printf("path: %s\n", tmp_path);
+
     pthread_t waittid[10000];
     int countthread = 0, i, localcounter = 0, chunk = 512, joined = 0;
 
@@ -474,9 +475,8 @@ void *recur(void *arg_path){
                 char  outP[outputLength];
                 char  inP[strlen(thread_path[localcounter])];
                 
-                printf("test output_path: %s\n", output_path);
+                
                 strcpy(outP,output_path);
-                printf("Test\n");
                 strcpy(inP,thread_path[localcounter]);
                 char* fileNoExtension = strdup(remove_ext(pDirent->d_name));
                 strcpy(BiteTheDust,sort_value_type);
@@ -485,7 +485,7 @@ void *recur(void *arg_path){
                 char inputPath[1024];
                 strcpy(inputPath,strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv")));
                 int headerNumber = count_header(inputPath);
-
+                
                 if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
                     free(fileNoExtension);
                     continue;
@@ -495,6 +495,7 @@ void *recur(void *arg_path){
                 //sortArgs->output_path = outputPath;
                 
                 pthread_mutex_unlock(&csv_lock);
+                
                 pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
             }
             
@@ -523,7 +524,7 @@ void *recur(void *arg_path){
 
 int main(int c, char *v[]){
 
-    
+    output_path = malloc(200*sizeof(char));
     
 
     if(c<3){
@@ -562,7 +563,7 @@ int main(int c, char *v[]){
     char path_modified[300];
     char output_tmp[300];
     char output_final[300];
-    char* output_path = NULL;
+    //char* output_path_tmp = NULL;
     char newStr[300];
     char newStr2[300];
 
@@ -776,9 +777,7 @@ int main(int c, char *v[]){
     
     //recurArgs->output_path = strdup(output_path);
     char tmp_path_argIn[500] = ".";
-    printf("out: %s\n", output_path);
     if (output_path == NULL){
-        printf("inside: %s\n", path);
         output_path = path;
     }
     recur((void *)tmp_path_argIn);
