@@ -199,7 +199,7 @@ void sort_one_file(char* arg_path){
     if (input_file == NULL){
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
         fclose(input_file);
-        return NULL;
+        return ;
     }
 
     // head of the Linked List
@@ -439,7 +439,7 @@ void sort_one_file(char* arg_path){
 
     fclose(input_file);
 
-    return NULL;
+    return ;
 }
 
 void *printTID(){
@@ -453,7 +453,7 @@ void * sortWrapperFunction(void* arg_path){
   pthread_mutex_lock(&sort_lock);
   sort_one_file((char*)arg_path);
   pthread_mutex_unlock(&sort_lock);
-  pthread_exit(NULL);
+  return NULL;
 
 }
 void *recur(void *arg_path){
