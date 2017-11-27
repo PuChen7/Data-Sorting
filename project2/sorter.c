@@ -180,10 +180,10 @@ int count_header(char* input_path){
   return value_type_number;
 }
 
-void *sort_one_file(void* arg_path){
+void sort_one_file(char* arg_path){
+
     int tid = pthread_self();
-    printf("sort file :%s   current TID %d : \n",arg_path,tid);
-    pthread_mutex_lock(&sort_lock);
+    //printf("sort file :%s   current TID %d : \n",arg_path,tid);
 
     tid = tid%10000<0?tid%10000*-1:tid%10000;
     // printf("\ntid %d\n\n", tid);
@@ -205,8 +205,6 @@ void *sort_one_file(void* arg_path){
     // head of the Linked List
     struct node *head = NULL;
     struct node *prev = NULL;
-    tid_array_head[tid] = head;
-    tid_array_prev[tid] = prev;
     char line[1024];    // temp array for holding csv file lines.
     int rowNumber=-1;    // hold the number of lines of the csv file.
     int value_type_number;    // hold the number of value types(column numbers).
@@ -269,7 +267,7 @@ void *sort_one_file(void* arg_path){
                 token[len-1]='\0';//make it end of string
             }
 
-            char *tempStr = trimwhitespace(token);
+            tempStr = trimwhitespace(token);
 
 
             if(tempStr[0] == '"'){
@@ -283,16 +281,13 @@ void *sort_one_file(void* arg_path){
             }
             if(headerDoubleQuotes== 1 && tailerDoubleQuotes == 0){
                 dummy=strdup(tempStr);
-                // printf("DUMMY: %s\n", tempStr);
                 int len =strlen(dummy);
                 dummy[len]=',';
                 dummy[len+1]='\0';
-                //printf("DUMMY AFTER: %s\n", dummy);
                 strcat(tempCell, dummy);
             }else if(tailerDoubleQuotes == 1){
 
                 dummy=strdup(tempStr);
-                // printf("DUMMY 2222: %s\n", tempStr);
                 strcat(tempCell, dummy);
                 headerDoubleQuotes=0;
             }
@@ -324,16 +319,16 @@ void *sort_one_file(void* arg_path){
         temp-> next = NULL;
 
         if (isFirstElement == 0){
-            temp-> next = tid_array_head[tid];
-            tid_array_head[tid] = temp;
+            temp-> next = head;
+            head = temp;
             isFirstElement = 1;
-            tid_array_prev[tid] = tid_array_head[tid];
+            prev = head;
             free(tmp);
             free(new_array);
             continue;
         }
-        tid_array_prev[tid]-> next = temp;
-        tid_array_prev[tid] = temp;
+        prev-> next = temp;
+        prev = temp;
 
         free(new_array);
         free(tmp);
@@ -348,8 +343,8 @@ void *sort_one_file(void* arg_path){
 
     //resuage of temp to 'copy' a head, then pass it to initDataArray to store 2d data array
     struct node *temp = (struct node*) malloc(sizeof(struct node));
-    temp-> line_array = tid_array_head[tid]->line_array;
-    temp-> next = tid_array_head[tid] -> next;
+    temp-> line_array = head->line_array;
+    temp-> next = head -> next;
 
 
     //[row][column]
@@ -400,11 +395,10 @@ void *sort_one_file(void* arg_path){
         int MAXROW=rowNumber-1;
 
 
-        //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
         if(MAXROW>=0){
             mergeSort(sort_array, 0, MAXROW,numeric);
         }
-        // //print header
+        //print header
         // count=0;
         // for(;count<value_type_number;count++){
         //     count==(value_type_number-1)?
@@ -422,16 +416,16 @@ void *sort_one_file(void* arg_path){
         //     }//end of line
         // }
 
-
+        printf("this time %d\n",MAXROW);
 
         free(sort_array);
     }
 
     // free Linked List
     struct node *tmp;
-    while (tid_array_head[tid] != NULL){
-        tmp = tid_array_head[tid];
-        tid_array_head[tid] = tid_array_head[tid]->next;
+    while (head != NULL){
+        tmp = head;
+        head = head->next;
         int i = 0;
         for(;i<value_type_number;i++){
             free(tmp-> line_array[i]);
@@ -445,8 +439,6 @@ void *sort_one_file(void* arg_path){
 
     fclose(input_file);
 
-    pthread_mutex_unlock(&sort_lock);
-
     return NULL;
 }
 
@@ -455,10 +447,19 @@ void *printTID(){
   printf("current TID %d : \n",tid);
 }
 // Recursively call thread to sort or traverse
+
+
+void * sortWrapperFunction(void* arg_path){
+  pthread_mutex_lock(&sort_lock);
+  sort_one_file((char*)arg_path);
+  pthread_mutex_unlock(&sort_lock);
+  pthread_exit(NULL);
+
+}
 void *recur(void *arg_path){
 
     char* tmp_path = arg_path;
-    printf("\n\nEnter Dir %s TID: %ld \n",tmp_path,pthread_self());
+    //printf("\n\nEnter Dir %s TID: %ld \n",tmp_path,pthread_self());
 
     //printf("path: %s\n", tmp_path);
     char tempPath[1000][500];
@@ -498,13 +499,13 @@ void *recur(void *arg_path){
         if (pDirent->d_type == DT_DIR){
             //printf("tid %d\n", pthread_self());
             pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
-            printf("Found Dir %s TID: %ld \n",thread_path[localcounter],pthread_self());
+            //printf("Found Dir %s TID: %ld \n",thread_path[localcounter],pthread_self());
 
         } else {
             // if it is a new csv, sort it.
             if(thread_path[localcounter]&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
 
-                pthread_mutex_lock(&csv_lock);
+                pthread_mutex_lock(&sort_lock);
 
                 /*
                 char  BiteTheDust[1024];
@@ -535,9 +536,9 @@ void *recur(void *arg_path){
 
                 int headerNumber = count_header(thread_path[localcounter]);
 
-                pthread_mutex_unlock(&csv_lock);
+                pthread_mutex_unlock(&sort_lock);
 
-                pthread_create(&current_tid, NULL, (void *)&printTID, NULL);
+                pthread_create(&current_tid, NULL, (void *)&sortWrapperFunction, (void *)&thread_path[localcounter]);
                 //pthread_create(&current_tid, NULL, (void *)&printTID,(void *)&thread_path[localcounter]);
                 printf("Found File %s TID: %ld \n",thread_path[localcounter],pthread_self());
 
