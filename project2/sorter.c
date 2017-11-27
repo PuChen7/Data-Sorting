@@ -23,7 +23,6 @@ char* sort_value_type;
 int tidindex = 0;
 pthread_t tid[10000];
 int pathcounter = 0;
-
 pthread_mutex_t path_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t threadlock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -182,8 +181,10 @@ int count_header(char* input_path){
 }
 
 void *sort_one_file(void* arg_path){
-    pthread_mutex_lock(&sort_lock);
     int tid = pthread_self();
+    printf("sort file :%s   current TID %d : \n",arg_path,tid);
+    pthread_mutex_lock(&sort_lock);
+
     tid = tid%10000<0?tid%10000*-1:tid%10000;
     // printf("\ntid %d\n\n", tid);
 
@@ -196,17 +197,14 @@ void *sort_one_file(void* arg_path){
     input_file = fopen(tmp_path, "r");
 
     if (input_file == NULL){
-        printf("hahahaha\n");
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
-
         fclose(input_file);
-        exit(0);
+        return NULL;
     }
 
     // head of the Linked List
     struct node *head = NULL;
     struct node *prev = NULL;
-    printf("sort one file: %d tid:%s\n",tid,tmp_path);
     tid_array_head[tid] = head;
     tid_array_prev[tid] = prev;
     char line[1024];    // temp array for holding csv file lines.
@@ -214,6 +212,7 @@ void *sort_one_file(void* arg_path){
     int value_type_number;    // hold the number of value types(column numbers).
     char* headerLine=NULL;   // hold the first line of the csv file, which is the value types.
     int isFirstElement = 0; // mark the first element in LL
+
     //fgets(line, 1024, input_file);
     // loop for reading the csv file line by line.
 
@@ -222,7 +221,7 @@ void *sort_one_file(void* arg_path){
         rowNumber++;
 
         char* tmp = strdup(line);
-        printf("#### %s", tmp);
+        //printf("#### %s", tmp);
         // first row
         // Returns first token
         char *token = strtok_single(tmp, ",");
@@ -242,7 +241,7 @@ void *sort_one_file(void* arg_path){
 
                 value_type_number++;    // update the number of columns(value types).
             }
-            //free(tmp);
+            free(tmp);
             continue;
         }
 
@@ -258,7 +257,7 @@ void *sort_one_file(void* arg_path){
         int tailerDoubleQuotes =0;
 
         char * tempStr;
-        char  tempCell[1024];
+        char  tempCell[100000];
         char *dummy = NULL;
         char * KillerQueen;
 
@@ -275,7 +274,7 @@ void *sort_one_file(void* arg_path){
 
             if(tempStr[0] == '"'){
                 headerDoubleQuotes=1;
-                //strcpy(tempCell[0],"");
+                strcpy(tempCell,"");
             }
 
             if(tempStr[strlen(tempStr)-1] == '"'){
@@ -310,7 +309,7 @@ void *sort_one_file(void* arg_path){
 
             token = strtok_single(NULL, ",");
         }
-        //free(dummy);
+        free(dummy);
 
         // create a new node
         // rowNumber starts from 1
@@ -329,7 +328,7 @@ void *sort_one_file(void* arg_path){
             tid_array_head[tid] = temp;
             isFirstElement = 1;
             tid_array_prev[tid] = tid_array_head[tid];
-            //free(tmp);
+            free(tmp);
             free(new_array);
             continue;
         }
@@ -339,6 +338,7 @@ void *sort_one_file(void* arg_path){
         free(new_array);
         free(tmp);
     }
+
 
     //pthread_t ttt = tid[tidindex];
     //printf("^^^^^^^ %d\n", tid[0]);
@@ -372,7 +372,7 @@ void *sort_one_file(void* arg_path){
     }
     // the type is not found in the file. ERROR.
     if (isFound == 1){
-        //printf("Error: The value type was not found in csv file!\n");
+        printf("Error: The value type was not found in csv file!\n");
 
     }else{
 
@@ -444,16 +444,24 @@ void *sort_one_file(void* arg_path){
     free(headerLine);
 
     fclose(input_file);
+
     pthread_mutex_unlock(&sort_lock);
-    exit(0);
+
+    return NULL;
 }
 
-
+void *printTID(){
+  int tid = pthread_self();
+  printf("current TID %d : \n",tid);
+}
 // Recursively call thread to sort or traverse
 void *recur(void *arg_path){
-    char* tmp_path = arg_path;
-    printf("path: %s\n", tmp_path);
 
+    char* tmp_path = arg_path;
+    printf("\n\nEnter Dir %s TID: %ld \n",tmp_path,pthread_self());
+
+    //printf("path: %s\n", tmp_path);
+    char tempPath[1000][500];
     pthread_t waittid[10000];
     int countthread = 0, i, localcounter = 0, chunk = 512, joined = 0;
 
@@ -483,11 +491,15 @@ void *recur(void *arg_path){
         pthread_mutex_lock(&path_lock);
         //thread_path[localcounter] = strcat(strcat(tmp_path,"/"),pDirent->d_name);
         sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
+
         pthread_mutex_unlock(&path_lock);
+        //strcpy(tempPath,thread_path[localcounter]);
         // if it is a directory, continue traversing
         if (pDirent->d_type == DT_DIR){
             //printf("tid %d\n", pthread_self());
             pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
+            printf("Found Dir %s TID: %ld \n",thread_path[localcounter],pthread_self());
+
         } else {
             // if it is a new csv, sort it.
             if(thread_path[localcounter]&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
@@ -525,7 +537,10 @@ void *recur(void *arg_path){
 
                 pthread_mutex_unlock(&csv_lock);
 
-                pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
+                pthread_create(&current_tid, NULL, (void *)&printTID, NULL);
+                //pthread_create(&current_tid, NULL, (void *)&printTID,(void *)&thread_path[localcounter]);
+                printf("Found File %s TID: %ld \n",thread_path[localcounter],pthread_self());
+
             }
 
         }
@@ -550,6 +565,7 @@ void *recur(void *arg_path){
         pthread_join(waittid[i], NULL);
     }
     closedir(dir);
+
 }
 
 
@@ -798,6 +814,7 @@ int main(int c, char *v[]){
     if (output_path == NULL){
         output_path = path;
     }
+    printf("Initial TID: %ld\n",pthread_self());
     recur((void *)tmp_path_argIn);
 
     int status = 0;
@@ -813,5 +830,6 @@ int main(int c, char *v[]){
     pthread_mutex_destroy(&csv_lock);
     pthread_mutex_destroy(&count_lock);
 
+    free(output_path);
     return 0;
 }
