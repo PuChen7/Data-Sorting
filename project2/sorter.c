@@ -191,6 +191,7 @@ void sort_one_file(char* arg_path){
 
     //struct ArgsForSorting* sortArgs = (struct ArgsForSorting*) argument;
     char* tmp_path = arg_path;
+    printf("HI %s\n", tmp_path);
     //output_path = tmp_path;
     FILE    *input_file;
 
@@ -199,7 +200,7 @@ void sort_one_file(char* arg_path){
     if (input_file == NULL){
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
         fclose(input_file);
-        return NULL;
+        return;
     }
 
     // head of the Linked List
@@ -439,7 +440,7 @@ void sort_one_file(char* arg_path){
 
     fclose(input_file);
 
-    return NULL;
+    return;
 }
 
 void *printTID(){
@@ -456,18 +457,20 @@ void * sortWrapperFunction(void* arg_path){
   pthread_exit(NULL);
 
 }
-void *recur(void *arg_path){
 
+
+void *recur(void *arg_path){
     char* tmp_path = arg_path;
+    printf("TEST %s\n", tmp_path);
     //printf("\n\nEnter Dir %s TID: %ld \n",tmp_path,pthread_self());
 
     //printf("path: %s\n", tmp_path);
-    char tempPath[1000][500];
+    //char tempPath[1000][500];
     pthread_t waittid[10000];
     int countthread = 0, i, localcounter = 0, chunk = 512, joined = 0;
 
     //struct ArgsForRecur* recurArgs = (struct ArgsForRecur*) argument;
-
+    
     DIR *dir = opendir(tmp_path);
     //printf("tmp_path: %s\n", tmp_path);
     pthread_t current_tid;
@@ -480,6 +483,7 @@ void *recur(void *arg_path){
     struct dirent *pDirent;
 
     while (pDirent =readdir(dir)){
+        
         if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0 || pDirent->d_name[0] == '.')
             continue;
 
@@ -492,20 +496,19 @@ void *recur(void *arg_path){
         pthread_mutex_lock(&path_lock);
         //thread_path[localcounter] = strcat(strcat(tmp_path,"/"),pDirent->d_name);
         sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
-
         pthread_mutex_unlock(&path_lock);
         //strcpy(tempPath,thread_path[localcounter]);
         // if it is a directory, continue traversing
         if (pDirent->d_type == DT_DIR){
             //printf("tid %d\n", pthread_self());
+            
             pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
             //printf("Found Dir %s TID: %ld \n",thread_path[localcounter],pthread_self());
 
         } else {
             // if it is a new csv, sort it.
             if(thread_path[localcounter]&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
-
-                pthread_mutex_lock(&sort_lock);
+                pthread_mutex_lock(&csv_lock);
 
                 /*
                 char  BiteTheDust[1024];
@@ -536,11 +539,11 @@ void *recur(void *arg_path){
 
                 int headerNumber = count_header(thread_path[localcounter]);
 
-                pthread_mutex_unlock(&sort_lock);
+                pthread_mutex_unlock(&csv_lock);
 
                 pthread_create(&current_tid, NULL, (void *)&sortWrapperFunction, (void *)&thread_path[localcounter]);
                 //pthread_create(&current_tid, NULL, (void *)&printTID,(void *)&thread_path[localcounter]);
-                printf("Found File %s TID: %ld \n",thread_path[localcounter],pthread_self());
+                //printf("Found File %s TID: %ld \n",thread_path[localcounter],pthread_self());
 
             }
 
@@ -566,7 +569,6 @@ void *recur(void *arg_path){
         pthread_join(waittid[i], NULL);
     }
     closedir(dir);
-
 }
 
 
