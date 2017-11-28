@@ -1,3 +1,5 @@
+//new
+
 #include <stdio.h>
 #include <sys/time.h>
 #include <signal.h>
@@ -44,7 +46,7 @@ struct ArgsForRecur{
 };
 */
 char* output_path;
-char thread_path[1000][500];
+char thread_path[1000][300];
 #define VALID_MOVIE_HEADER_NUMBER 28
 
 
@@ -456,12 +458,12 @@ void sort_one_file(char* arg_path){
 
     fclose(input_file);
 
-    return NULL;
+    return;
 }
 
 void *printTID(){
   int tid = pthread_self();
-  printf("current TID %d : \n",tid);
+  //printf("current TID %d : \n",tid);
 }
 // Recursively call thread to sort or traverse
 
@@ -477,7 +479,8 @@ void * sortWrapperFunction(void* arg_path){
 
 void *recur(void *arg_path){
     char* tmp_path = arg_path;
-    printf("TEST %s\n", tmp_path);
+    DIR *dir = opendir(tmp_path);
+
     //printf("\n\nEnter Dir %s TID: %ld \n",tmp_path,pthread_self());
 
     //printf("path: %s\n", tmp_path);
@@ -487,7 +490,7 @@ void *recur(void *arg_path){
 
     //struct ArgsForRecur* recurArgs = (struct ArgsForRecur*) argument;
 
-    DIR *dir = opendir(tmp_path);
+    struct dirent *pDirent;
     //printf("tmp_path: %s\n", tmp_path);
     pthread_t current_tid;
 
@@ -496,128 +499,51 @@ void *recur(void *arg_path){
         return NULL;
     }
 
-    struct dirent *pDirent;
+    
 
     while (pDirent =readdir(dir)){
 
-        if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0 || pDirent->d_name[0] == '.')
+        if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0)
             continue;
 
         pthread_mutex_lock(&count_lock);
         localcounter = pathcounter % 1000;
         pathcounter++;
         pthread_mutex_unlock(&count_lock);
-        // update path
-
-        pthread_mutex_lock(&path_lock);
-        //thread_path[localcounter] = strcat(strcat(tmp_path,"/"),pDirent->d_name);
         sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
-        pthread_mutex_unlock(&path_lock);
-        //strcpy(tempPath,thread_path[localcounter]);
-        // if it is a directory, continue traversing
+        
         if (pDirent->d_type == DT_DIR){
             //printf("tid %d\n", pthread_self());
-
-            int retValue = pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
-            if(retValue!=0){
-              printf("something wrong\n\n");
-              return;
-            }
-            //printf("Found Dir %s TID: %ld \n",thread_path[localcounter],pthread_self());
-            waittid[countthread++] = current_tid;
-
-            pthread_mutex_lock(&threadlock);
-
-            tid[tidindex++] = current_tid;
-
-            //printf("CURENT: %d, index: %d\n", current_tid, tidindex);
-
-            pthread_mutex_unlock(&threadlock);
+            pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
 
         } else {
             // if it is a new csv, sort it.
-            if(thread_path[localcounter]&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
-                pthread_mutex_lock(&csv_lock);
-
-                /*
-                char  BiteTheDust[1024];
-                char  outP[outputLength];
-                char  inP[strlen(thread_path[localcounter])];
-
-
-                strcpy(outP,output_path);
-                strcpy(inP,thread_path[localcounter]);
-
-                char* fileNoExtension = strdup(remove_ext(pDirent->d_name));
-                strcpy(BiteTheDust,sort_value_type);
-                char outputPath[1024];
-                strcpy(outputPath,strcat(strcat(strcat(strcat(outP,"/"),strcat(fileNoExtension,"-sorted<")),BiteTheDust),">.csv"));
-                char inputPath[1024];
-                strcpy(inputPath,strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv")));
-                int headerNumber = count_header(inputPath);
-                output_path = outputPath;
-
-                if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
-                    free(fileNoExtension);
-                    continue;
-                }
-                */
-                //struct ArgsForSorting *sortArgs = malloc(sizeof(struct ArgsForSorting));
-                //sortArgs->input_path = inputPath;
-                //sortArgs->output_path = outputPath;
-
-                int headerNumber = count_header(thread_path[localcounter]);
-
-                pthread_mutex_unlock(&csv_lock);
-
-                int retValue = pthread_create(&current_tid, NULL, (void *)&sortWrapperFunction, (void *)&thread_path[localcounter]);
-                //pthread_create(&current_tid, NULL, (void *)&printTID,(void *)&thread_path[localcounter]);
-                //printf("Found File %s TID: %ld \n",thread_path[localcounter],pthread_self());
-
-                if(retValue!=0){
-                  printf("something wrong\n\n");
-                  return;
-                }
-                waittid[countthread++] = current_tid;
-                pthread_mutex_lock(&threadlock);
-
-                tid[tidindex++] = current_tid;
-
-                //printf("CURENT: %d, index: %d\n", current_tid, tidindex);
-
-                pthread_mutex_unlock(&threadlock);
-            }
+            if(strlen(thread_path[localcounter]) < 4 || strcmp(thread_path[localcounter] + strlen(thread_path[localcounter]) - 4,".csv") != 0 || strstr(thread_path[localcounter],"-sorted")){//found csv
+                continue;
+            } 
+            //int headerNumber = count_header(thread_path[localcounter]);
+            pthread_create(&current_tid, NULL, (void *)&printTID, (void *)&thread_path[localcounter]);
+            
 
         }
-        // pthread_mutex_lock(&threadlock);
-        //
-        // tid[tidindex++] = current_tid;
-        //
-        // //printf("CURENT: %d, index: %d\n", current_tid, tidindex);
-        //
-        // pthread_mutex_unlock(&threadlock);
-        // pthread_join(currtid, NULL);
+        waittid[countthread++] = current_tid;
+        pthread_mutex_lock(&threadlock);
+        printf("CURRENT TID: %u at %s\n", current_tid, thread_path[localcounter]);
+        tid[tidindex++] = current_tid;
+        pthread_mutex_unlock(&threadlock);
         if (countthread == chunk) {
-            for (i = joined; i < countthread; i++) {
-                int retValue = pthread_join(waittid[i], NULL);
-                if(retValue!=0){
-                  printf("something wrong\n\n");
-                }
+           for (i = joined; i < countthread; i++) {
+                pthread_join(waittid[i], NULL);
             }
             joined = countthread;
             chunk += 512;
         }
     }
     for (i = joined; i < countthread; i++) {
-        int retValue = pthread_join(waittid[i], NULL);
-        printf("\njoined %d index:%d\n",waittid[i],i);
-        if(retValue!=0){
-          printf("something wrong\n\n");
-        }
-
+        pthread_join(waittid[i], NULL);
     }
     closedir(dir);
-    return NULL;
+    //return NULL;
 }
 
 
@@ -758,7 +684,8 @@ int main(int c, char *v[]){
 
     } else if (c == 7){
             int argsGroup[3] ={1,3,5};
-            for(int init=0;init<3;init++){
+            int init;
+            for(init=0;init<3;init++){
               if(strcmp(v[argsGroup[init]],"-c")==0){
                 cIndex=argsGroup[init];
               }
@@ -866,7 +793,8 @@ int main(int c, char *v[]){
     if (output_path == NULL){
         output_path = path;
     }
-    printf("Initial TID: %ld\n",pthread_self());
+    //printf("Initial TID: %ld\n",pthread_self());
+    
     recur((void *)tmp_path_argIn);
 
     // int status = 0;
@@ -876,10 +804,13 @@ int main(int c, char *v[]){
     //     printf("%d,",wpid);
     //     *pCounter+=1;
     // }
-    int ccc=0;
-    for(;ccc<tidindex;ccc++){
-      printf("%ld at index [%d]\n",tid[ccc],ccc);
+    
+    printf("\n+++++++++++++++\n");
+    int i;
+    for (i = 0; i < tidindex - 1; i++) {
+        printf("%u index[%d]\n", tid[i], i);
     }
+    printf("%u\nTotal number of threads: %d\n", tid[i], tidindex + 1);
     printf("ENDNENDNENDNEND\n");
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
