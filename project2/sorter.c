@@ -31,8 +31,6 @@ pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 
-struct node *tid_array_head[10000];
-struct node *tid_array_prev[10000];
 
 /*
 struct ArgsForSorting{
@@ -45,6 +43,7 @@ struct ArgsForRecur{
     char* output_path;
 };
 */
+char file_dictionary[1000][300];
 char thread_path[1000][300];
 #define VALID_MOVIE_HEADER_NUMBER 28
 
@@ -474,7 +473,8 @@ void *recur(void *arg_path){
               printf("%s invalid csv\n",thread_path[path_index]);
               break;
             }
-            printf("%s csv index %d\n",thread_path[path_index],fileindex++);
+            strcpy(file_dictionary[fileindex],thread_path[path_index]);
+            //printf("%s csv index %d\n",thread_path[path_index],fileindex++);
             //pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[path_index]);
 
         }
@@ -598,10 +598,12 @@ int main(int c, char *v[]){
     printf("OUTPUT: %s\n", output_path);
     recur((void *)initial_dir);
 
-    int i;
-    for (i = 0; i < tidindex; i++) {
-        pthread_join(tid[i], NULL);
+    int i = 0;
+    for(; i <fileindex;i++){
+      printf("%s index %d\n",file_dictionary[i],i );
     }
+
+
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
     pthread_mutex_destroy(&csv_lock);
