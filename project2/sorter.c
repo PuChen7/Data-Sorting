@@ -32,9 +32,6 @@ pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 
-struct node *tid_array_head[10000];
-struct node *tid_array_prev[10000];
-
 /*
 struct ArgsForSorting{
     char* input_path;
@@ -488,24 +485,15 @@ void *recur(void *arg_path){
             }
               pthread_mutex_lock(&sort_lock);
               headerNumber = count_header(thread_path[localcounter]);
-              printf("valid csv index :%d header:%d path:%s\n",tidindex,headerNumber,thread_path[localcounter]);
+              //printf("valid csv index :%d header:%d path:%s\n",tidindex,headerNumber,thread_path[localcounter]);
               pthread_mutex_unlock(&sort_lock);
               if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
+                printf("%s not a valid csv\n",thread_path[localcounter]);
                 continue;
               }
-
             pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
-            //printf("your father %ld self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
-            //printf("you baby:%ld , self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
-            //
+
         }
-        //int currentPTID = pthread_self();
-        //printf("whileloop %ld %s\n\n",tid[tidindex-1>=0?tidindex-1:0],thread_path[localcounter] );
-        //continue;
-        // if(csvLooper==1)break;
-        // pthread_mutex_lock(&csv_lock);
-        // csvLooper++;
-        // pthread_mutex_unlock(&csv_lock);
     }
     closedir(dir);
     return NULL;
