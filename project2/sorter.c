@@ -497,15 +497,11 @@ void ifPathCorrect(char* path){
 
 int main(int c, char *v[]){
 
-    if(c<3){
-      printf("%s",VALID_USAGE);
-    }
 
     struct dirent *pDirent;
     DIR *pDir;
-    //char cwd[1024];
 
-    sort_value_type = v[1];
+
     // path for output sorted csv
     char output_path[500] = ".";
     // path for starting dir
@@ -527,37 +523,58 @@ int main(int c, char *v[]){
     }
 
     if (c == 3){
-        //output_path = ".";
-        //strcpy(initial_dir, ".");
-    } else if (c == 5){
+
+    }   // 2 parameters: -c -d | -c -o | -d -c | -o -c
+    else if (c == 5){
         if (strstr(v[4], cwd) != NULL){
             memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
             abs_path[strlen(v[4]) - cwd_len] = '\0';
             isAbs = 0;
         }
-        // check if -o or -d
         ifPathCorrect(v[4]);
-        if (strcmp(v[3], "-d") == 0){
+
+        // -c -d
+        if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-d") == 0){
             if (isAbs == 0){
                 strcpy(initial_dir, abs_path);
             } else {
                 strcpy(initial_dir, v[4]);
             }
-        } else if (strcmp(v[3], "-o") == 0){
+        // -c -o
+        } else if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-o") == 0){
             if (isAbs == 0){
                 strcpy(output_path, abs_path);
             } else {
                 strcpy(output_path, v[4]);
             }
-
+        // -d -c
+        } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0) {
+            if (strstr(v[2], cwd) != NULL){
+                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+                abs_path[strlen(v[2]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path);
+            } else {
+                strcpy(initial_dir, v[2]);
+            }
+        // -o -c
+        } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0){
+            if (strstr(v[2], cwd) != NULL){
+                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+                abs_path[strlen(v[2]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[2]);
+            }
         } else {
             printf("Error: incorrect parameter!\n");
             exit(0);
         }
+    // -c -d -o | -c -o -d | -o -c -d | -o -d -c | -d -c -o | -d -o -c
     } else if (c == 7){
         ifPathCorrect(v[4]);
         ifPathCorrect(v[6]);
-        if (strcmp(v[3], "-d") == 0 && strcmp(v[5], "-o") == 0){
+        // -c -d -o
+        if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-o") == 0){
             if (strstr(v[4], cwd) != NULL){
                 memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
                 abs_path[strlen(v[4]) - cwd_len] = '\0';
@@ -565,7 +582,6 @@ int main(int c, char *v[]){
             } else {
                 strcpy(initial_dir, v[4]);
             }
-
             if (strstr(v[6], cwd) != NULL){
                 char abs_path2[1024];
                 memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
@@ -574,7 +590,8 @@ int main(int c, char *v[]){
             } else {
                 strcpy(output_path, v[6]);
             }
-        } else if (strcmp(v[3], "-o") == 0 && strcmp(v[5], "-d") == 0){
+        // -c -o -d
+        } else if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-d") == 0){
             if (strstr(v[4], cwd) != NULL){
                 memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
                 abs_path[strlen(v[4]) - cwd_len] = '\0';
@@ -582,7 +599,6 @@ int main(int c, char *v[]){
             } else {
                 strcpy(output_path, v[4]);
             }
-
             if (strstr(v[6], cwd) != NULL){
                 char abs_path2[1024];
                 memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
@@ -590,6 +606,74 @@ int main(int c, char *v[]){
                 strcpy(initial_dir, abs_path2);
             } else {
                 strcpy(initial_dir, v[6]);
+            }
+        // -o -c -d
+        } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-d") == 0){
+            if (strstr(v[2], cwd) != NULL){
+                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+                abs_path[strlen(v[2]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[2]);
+            }
+            if (strstr(v[6], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+                abs_path2[strlen(v[6]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path2);
+            } else {
+                strcpy(initial_dir, v[6]);
+            }
+        // -o -d -c
+        } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-c") == 0){
+            if (strstr(v[2], cwd) != NULL){
+                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+                abs_path[strlen(v[2]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[2]);
+            }
+            if (strstr(v[4], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+                abs_path2[strlen(v[4]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path2);
+            } else {
+                strcpy(initial_dir, v[4]);
+            }
+        // -d -c -o
+        } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-o") == 0){
+            if (strstr(v[6], cwd) != NULL){
+                memcpy(abs_path, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+                abs_path[strlen(v[6]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[6]);
+            }
+            if (strstr(v[2], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+                abs_path2[strlen(v[2]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path2);
+            } else {
+                strcpy(initial_dir, v[2]);
+            }
+        // -d -o -c
+        } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-c") == 0){
+            if (strstr(v[4], cwd) != NULL){
+                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+                abs_path[strlen(v[4]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[4]);
+            }
+            if (strstr(v[2], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+                abs_path2[strlen(v[2]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path2);
+            } else {
+                strcpy(initial_dir, v[2]);
             }
         }
     } else {
@@ -612,7 +696,6 @@ int main(int c, char *v[]){
       printf("%s index %d\n",file_dictionary[i],i );
     }
     pthread_mutex_unlock(&csv_lock);
-
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
     pthread_mutex_destroy(&csv_lock);
