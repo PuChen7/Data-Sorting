@@ -20,6 +20,7 @@
 #define VALID_MOVIE_HEADER_NUMBER 28
 #define VALID_USAGE   "invalid argument numbers\ncorrect usage :./sample -c <column> (other args are optional after this)-d<directory to start> -o<outputdirectory>"
 //global
+int headerNumber;
 static int *pCounter;
 char* sort_value_type;
 int tidindex = 0;
@@ -47,7 +48,6 @@ struct ArgsForRecur{
 */
 char* output_path;
 char thread_path[1000][300];
-#define VALID_MOVIE_HEADER_NUMBER 28
 
 
 char *strtok_single (char * str, char const * delims) {
@@ -358,8 +358,7 @@ void sort_one_file(void* arg_path){
     }
     // the type is not found in the file. ERROR.
     if (isFound == 1){
-        printf("Error: The value type was not found in csv file!\n");
-
+        printf("Error: The value type was not found in csv file! %s\n",tmp_path);
     }else{
 
         // store the column as an array
@@ -390,7 +389,7 @@ void sort_one_file(void* arg_path){
             mergeSort(sort_array, 0, MAXROW,numeric);
         }
 
-        //print header
+        // //print header
         // count=0;
         // for(;count<value_type_number;count++){
         //     count==(value_type_number-1)?
@@ -469,7 +468,6 @@ void *recur(void *arg_path){
     // printf("\ngrand %ld\n",grandPTID );
     int csvLooper=0;
     while (pDirent =readdir(dir)){
-
         if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0)
             continue;
 
@@ -480,14 +478,7 @@ void *recur(void *arg_path){
         pthread_mutex_unlock(&count_lock);
 
         if (pDirent->d_type == DT_DIR){
-            //printf("%s\n",thread_path[localcounter]);
-
-            //printf("your father %ld self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
             pthread_create(&tid[tidindex++], NULL, (void *)&recur, (void *)&thread_path[localcounter]);
-
-            //printf("you baby:%ld , self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);            //if(pthread_self()!=currentPTID)break;
-            //printf("whileloop %ld %s\n\n",tid[tidindex-1>=0?tidindex-1:0],thread_path[localcounter] );
-
             continue;
         } else {
             // if it is a new csv, sort it.
@@ -495,10 +486,15 @@ void *recur(void *arg_path){
             || strstr(thread_path[localcounter],"-sorted")){//found csv
                 continue;
             }
-            printf("valid csv index :%d\n",tidindex);
-            pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
+              pthread_mutex_lock(&sort_lock);
+              headerNumber = count_header(thread_path[localcounter]);
+              printf("valid csv index :%d header:%d path:%s\n",tidindex,headerNumber,thread_path[localcounter]);
+              pthread_mutex_unlock(&sort_lock);
+              if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
+                continue;
+              }
 
-            //int headerNumber = count_header(thread_path[localcounter]);
+            pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
             //printf("your father %ld self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
             //printf("you baby:%ld , self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
             //
