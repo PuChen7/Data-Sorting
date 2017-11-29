@@ -20,7 +20,6 @@
 #define VALID_MOVIE_HEADER_NUMBER 28
 #define VALID_USAGE   "invalid argument numbers\ncorrect usage :./sample -c <column> (other args are optional after this)-d<directory to start> -o<outputdirectory>"
 //global
-int headerNumber;
 static int *pCounter;
 char* sort_value_type;
 int tidindex = 0;
@@ -46,8 +45,8 @@ struct ArgsForRecur{
     char* output_path;
 };
 */
-char* output_path;
 char thread_path[1000][300];
+#define VALID_MOVIE_HEADER_NUMBER 28
 
 
 char *strtok_single (char * str, char const * delims) {
@@ -358,7 +357,8 @@ void sort_one_file(void* arg_path){
     }
     // the type is not found in the file. ERROR.
     if (isFound == 1){
-        printf("Error: The value type was not found in csv file! %s\n",tmp_path);
+        printf("Error: The value type was not found in csv file!\n");
+
     }else{
 
         // store the column as an array
@@ -389,7 +389,7 @@ void sort_one_file(void* arg_path){
             mergeSort(sort_array, 0, MAXROW,numeric);
         }
 
-        // //print header
+        //print header
         // count=0;
         // for(;count<value_type_number;count++){
         //     count==(value_type_number-1)?
@@ -434,88 +434,61 @@ void sort_one_file(void* arg_path){
     return ;
 }
 
-void *printTID(){
-  int tid = pthread_self();
-  //printf("current TID %d : \n",tid);
-}
-// Recursively call thread to sort or traverse
-
-
-
-
 void *recur(void *arg_path){
     char* tmp_path = arg_path;
+    
     DIR *dir = opendir(tmp_path);
 
-    //printf("\n\nEnter Dir %s TID: %ld \n",tmp_path,pthread_self());
-
-    //printf("path: %s\n", tmp_path);
-    //char tempPath[1000][500];
-    //pthread_t waittid[10000];
-    int countthread = 0, i, localcounter = 0, chunk = 512, joined = 0;
-
-    //struct ArgsForRecur* recurArgs = (struct ArgsForRecur*) argument;
+   
+    int i, path_index = 0;
 
     struct dirent *pDirent;
-    //printf("tmp_path: %s\n", tmp_path);
-    //pthread_t current_tid;
-
+ 
     if (dir == NULL){
         printf("No such directory\n");
         return NULL;
     }
-    // int grandPTID = pthread_self();
-    // printf("\ngrand %ld\n",grandPTID );
+  
     int csvLooper=0;
     while (pDirent =readdir(dir)){
         if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0)
             continue;
 
         pthread_mutex_lock(&count_lock);
-        localcounter = pathcounter % 1000;
+        path_index = pathcounter % 1000;
         pathcounter++;
-        sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
+        sprintf(thread_path[path_index], "%s/%s", tmp_path, pDirent->d_name);
         pthread_mutex_unlock(&count_lock);
 
         if (pDirent->d_type == DT_DIR){
-            pthread_create(&tid[tidindex++], NULL, (void *)&recur, (void *)&thread_path[localcounter]);
+            pthread_create(&tid[tidindex++], NULL, (void *)&recur, (void *)&thread_path[path_index]);
+
+         
             continue;
         } else {
             // if it is a new csv, sort it.
-            if(strlen(thread_path[localcounter]) < 4 || strcmp(thread_path[localcounter] + strlen(thread_path[localcounter]) - 4,".csv") != 0
-            || strstr(thread_path[localcounter],"-sorted")){//found csv
+            if(strlen(thread_path[path_index]) < 4 || strcmp(thread_path[path_index] + strlen(thread_path[path_index]) - 4,".csv") != 0
+            || strstr(thread_path[path_index],"-sorted")){//found csv
                 continue;
             }
-              pthread_mutex_lock(&sort_lock);
-              headerNumber = count_header(thread_path[localcounter]);
-              printf("valid csv index :%d header:%d path:%s\n",tidindex,headerNumber,thread_path[localcounter]);
-              pthread_mutex_unlock(&sort_lock);
-              if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
-                continue;
-              }
-
-            pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
-            //printf("your father %ld self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
-            //printf("you baby:%ld , self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
-            //
+            printf("valid csv index :%d\n",tidindex);
+            pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[path_index]);
+           
         }
-        //int currentPTID = pthread_self();
-        //printf("whileloop %ld %s\n\n",tid[tidindex-1>=0?tidindex-1:0],thread_path[localcounter] );
-        //continue;
-        // if(csvLooper==1)break;
-        // pthread_mutex_lock(&csv_lock);
-        // csvLooper++;
-        // pthread_mutex_unlock(&csv_lock);
+       
     }
     closedir(dir);
     return NULL;
 }
 
+void ifPathCorrect(char* path){
+    if (strstr(path, "//") != NULL){
+        printf("Error: incorrect path!\n");
+        exit(0);
+    }
+}
 
 int main(int c, char *v[]){
-
-    output_path = malloc(200*sizeof(char));
-
 
     if(c<3){
       printf("%s",VALID_USAGE);
@@ -523,265 +496,116 @@ int main(int c, char *v[]){
 
     struct dirent *pDirent;
     DIR *pDir;
-    char cwd[1024];
+    //char cwd[1024];
     pCounter = mmap(NULL, sizeof *pCounter, PROT_READ | PROT_WRITE,
                         MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     *pCounter = 0;
 
+    sort_value_type = v[1];
+    // path for output sorted csv
+    char output_path[500] = ".";
+    // path for starting dir 
+    char initial_dir[500] = ".";
 
+    char abs_path[1024];
+
+    char cwd[1024];
     getcwd(cwd, sizeof(cwd));
+    int cwd_len = strlen(cwd);
 
+    int isAbs = 1;
+    
 
-    char path_tmp[300];
-    char* path;
-    char path_modified[300];
-    char output_tmp[300];
-    char output_final[300];
-    //char* output_path_tmp = NULL;
-    char newStr[300];
-    char newStr2[300];
-
-    int cIndex=1;
-    int secIndex=0;
-    int trdIndex=0;
-    if (c == 3){
-        // current dir
-        path_tmp[0] = '.';
-        path = path_tmp;
-    } else if (c == 5){
-
-        if(strcmp(v[1],"-c")==0){
-          cIndex=1;
-          secIndex=3;
-        }
-        else if(strcmp(v[3],"-c")==0){
-          cIndex=3;
-          secIndex=1;
-        }
-        else{
-        printf("%s",VALID_USAGE);
+    // arguments less than 3, error
+    if (c < 3){
+        printf("Error: insufficient parameters!\n");
         exit(0);
+    }
+
+    if (c == 3){
+        //output_path = ".";
+        //strcpy(initial_dir, ".");
+    } else if (c == 5){
+        if (strstr(v[4], cwd) != NULL){
+            memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+            abs_path[strlen(v[4]) - cwd_len] = '\0';
+            isAbs = 0;
         }
-
-        if(strcmp(v[secIndex],"-d")==0){
-            // -d
-            char pat[300];
-            int matchingIndex;
-            if(strstr(v[secIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
-                }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[secIndex+1])==matchingIndex)
-                    pat[0]='.';
-            else{
-
-                strcpy(pat,v[secIndex+1]+matchingIndex);
-
-                if(strlen(pat)<=1) {
-                    if(strlen(pat)==0)
-                        pat[0]='.';
-                    if(pat[0]==' ')pat[0]='.';
-                    //pat[2]='\0';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pat[0]=='.');
-                    else if(pat[0]=='/'){
-                        newStr[0] = '.';
-                        for (; loopindex < strlen(pat)+1; loopindex++){
-                            newStr[loopindex] = pat[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr); loopindex++){
-                            pat[loopindex] = newStr[loopindex];
-                        }
-                    }
-                }
+        // check if -o or -d
+        ifPathCorrect(v[4]);
+        if (strcmp(v[3], "-d") == 0){
+            if (isAbs == 0){
+                strcpy(initial_dir, abs_path);
+            } else {
+                strcpy(initial_dir, v[4]);
+            }            
+        } else if (strcmp(v[3], "-o") == 0){
+            if (isAbs == 0){
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[4]);
             }
-
-            path = pat;
-
-        }else if(strcmp(v[secIndex],"-o")==0){
-
-            // -o
-            path_tmp[0] = '.';
-            path = path_tmp;
-            char pat[300];
-            int matchingIndex;
-            if(strstr(v[secIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
-                }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[secIndex+1])==matchingIndex)
-                    pat[0]='.';
-            else{
-
-                strcpy(pat,v[secIndex+1]+matchingIndex);
-
-                if(strlen(pat)<=1) {
-                    if(strlen(pat)==0)
-                        pat[0]='.';
-                    if(pat[0]==' ')pat[0]='.';
-                    //pat[2]='\0';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pat[0]=='.');
-                    else if(pat[0]=='/'){
-                        newStr2[0] = '.';
-                        for (; loopindex < strlen(pat)+1; loopindex++){
-                            newStr2[loopindex] = pat[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr2); loopindex++){
-                            pat[loopindex] = newStr2[loopindex];
-                        }
-                    }
-                }
-            }
-            output_path = pat;
-
+            
+        } else {
+            printf("Error: incorrect parameter!\n");
+            exit(0);
         }
-
     } else if (c == 7){
-            int argsGroup[3] ={1,3,5};
-            int init;
-            for(init=0;init<3;init++){
-              if(strcmp(v[argsGroup[init]],"-c")==0){
-                cIndex=argsGroup[init];
-              }
-              else if(strcmp(v[argsGroup[init]],"-d")==0){
-                secIndex=argsGroup[init];
-              }
-              else if(strcmp(v[argsGroup[init]],"-o")==0){
-                trdIndex=argsGroup[init];
-              }
+        ifPathCorrect(v[4]);
+        ifPathCorrect(v[6]);
+        if (strcmp(v[3], "-d") == 0 && strcmp(v[5], "-o") == 0){
+            if (strstr(v[4], cwd) != NULL){
+                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+                abs_path[strlen(v[4]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path);
+            } else {
+                strcpy(initial_dir, v[4]);
             }
 
-            //-d
-            char pat[300];
-            int matchingIndex;
-            if(strstr(v[secIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
+            if (strstr(v[6], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+                abs_path2[strlen(v[6]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path2);
+            } else {
+                strcpy(output_path, v[6]);
             }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[secIndex+1])==matchingIndex)
-                    pat[0]='.';
-            else{
-
-                strcpy(pat,v[secIndex+1]+matchingIndex);
-
-                if(strlen(pat)<=1) {
-                    if(strlen(pat)==0)
-                        pat[0]='.';
-                    if(pat[0]==' ')pat[0]='.';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pat[0]=='.');
-                    else if(pat[0]=='/'){
-                        newStr[0] = '.';
-                        for (; loopindex < strlen(pat)+1; loopindex++){
-                            newStr[loopindex] = pat[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr); loopindex++){
-                            pat[loopindex] = newStr[loopindex];
-                        }
-                    }
-                }
+        } else if (strcmp(v[3], "-o") == 0 && strcmp(v[5], "-d") == 0){
+            if (strstr(v[4], cwd) != NULL){
+                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+                abs_path[strlen(v[4]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[4]);
             }
 
-            path = pat;
-        //======================================
-
-        // -o
-            char pato[300];
-            matchingIndex=0;
-            if(strstr(v[trdIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
-                }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[trdIndex+1])==matchingIndex)
-                    pato[0]='.';
-            else{
-
-                strcpy(pato,v[trdIndex+1]+matchingIndex);
-
-                if(strlen(pato)<=1) {
-                    if(strlen(pato)==0)
-                        pato[0]='.';
-                    if(pato[0]==' ')pato[0]='.';
-                    //pato[2]='\0';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pato[0]=='.');
-                    else if(pato[0]=='/'){
-                        newStr2[0] = '.';
-                        for (; loopindex < strlen(pato)+1; loopindex++){
-                            newStr2[loopindex] = pato[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr2); loopindex++){
-                            pato[loopindex] = newStr2[loopindex];
-                        }
-                    }
-                }
+            if (strstr(v[6], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+                abs_path2[strlen(v[6]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path2);
+            } else {
+                strcpy(initial_dir, v[6]);
             }
-            output_path = pato;
-
+        }   
+    } else {
+        printf("Error: insufficient parameter!\n");
+        exit(0);
     }
-
-    // get the sort value type
-    sort_value_type = v[cIndex+1];
-/*
-    pDir = opendir (path);
-    if (output_path == NULL){
-        output_path = path;
-    }
-*/
-
-    //struct ArgsForRecur *recurArgs = malloc(1000*sizeof(char));
-    //recurArgs->path = strdup(path);
-
-    //recurArgs->output_path = strdup(output_path);
-    char tmp_path_argIn[500] = ".";
-    if (output_path == NULL){
-        output_path = path;
-    }
+    
     printf("Initial TID: %ld\n",pthread_self());
-    recur((void *)tmp_path_argIn);
+    printf("INITIAL: %s\n", initial_dir);
+    printf("OUTPUT: %s\n", output_path);
+    recur((void *)initial_dir);
 
-    // int status = 0;
-    // pid_t wpid;
-    // while ((wpid = wait(&status)) > 0)
-    // {
-    //     printf("%d,",wpid);
-    //     *pCounter+=1;
-    // }
-
-    //printf("\n+++++++++++++++\n");
     int i;
     for (i = 0; i < tidindex; i++) {
         pthread_join(tid[i], NULL);
-        //printf("%u index[%d]\n", tid[i], i);
     }
-    //printf("%u\nTotal number of threads(Including main thread): %d\n", tid[i], tidindex + 1);
-    printf("ENDNENDNENDNEND\n");
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
     pthread_mutex_destroy(&csv_lock);
     pthread_mutex_destroy(&count_lock);
 
-    free(output_path);
     return 0;
 }
