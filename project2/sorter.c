@@ -20,9 +20,9 @@
 #define VALID_MOVIE_HEADER_NUMBER 28
 #define VALID_USAGE   "invalid argument numbers\ncorrect usage :./sample -c <column> (other args are optional after this)-d<directory to start> -o<outputdirectory>"
 //global
-static int *pCounter;
 char* sort_value_type;
 int tidindex = 0;
+int fileindex = 0;
 pthread_t tid[10000];
 int pathcounter = 0;
 pthread_mutex_t path_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -436,19 +436,19 @@ void sort_one_file(void* arg_path){
 
 void *recur(void *arg_path){
     char* tmp_path = arg_path;
-    
+
     DIR *dir = opendir(tmp_path);
 
-   
+
     int i, path_index = 0;
 
     struct dirent *pDirent;
- 
+
     if (dir == NULL){
         printf("No such directory\n");
         return NULL;
     }
-  
+
     int csvLooper=0;
     while (pDirent =readdir(dir)){
         if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0)
@@ -463,7 +463,6 @@ void *recur(void *arg_path){
         if (pDirent->d_type == DT_DIR){
             pthread_create(&tid[tidindex++], NULL, (void *)&recur, (void *)&thread_path[path_index]);
 
-         
             continue;
         } else {
             // if it is a new csv, sort it.
@@ -471,11 +470,15 @@ void *recur(void *arg_path){
             || strstr(thread_path[path_index],"-sorted")){//found csv
                 continue;
             }
-            printf("valid csv index :%d\n",tidindex);
-            pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[path_index]);
-           
+            if(count_header(thread_path[path_index])!=28){
+              printf("%s invalid csv\n",thread_path[path_index]);
+              break;
+            }
+            printf("%s csv index %d\n",thread_path[path_index],fileindex++);
+            //pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[path_index]);
+
         }
-       
+
     }
     closedir(dir);
     return NULL;
@@ -497,14 +500,11 @@ int main(int c, char *v[]){
     struct dirent *pDirent;
     DIR *pDir;
     //char cwd[1024];
-    pCounter = mmap(NULL, sizeof *pCounter, PROT_READ | PROT_WRITE,
-                        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    *pCounter = 0;
 
     sort_value_type = v[1];
     // path for output sorted csv
     char output_path[500] = ".";
-    // path for starting dir 
+    // path for starting dir
     char initial_dir[500] = ".";
 
     char abs_path[1024];
@@ -514,7 +514,7 @@ int main(int c, char *v[]){
     int cwd_len = strlen(cwd);
 
     int isAbs = 1;
-    
+
 
     // arguments less than 3, error
     if (c < 3){
@@ -538,14 +538,14 @@ int main(int c, char *v[]){
                 strcpy(initial_dir, abs_path);
             } else {
                 strcpy(initial_dir, v[4]);
-            }            
+            }
         } else if (strcmp(v[3], "-o") == 0){
             if (isAbs == 0){
                 strcpy(output_path, abs_path);
             } else {
                 strcpy(output_path, v[4]);
             }
-            
+
         } else {
             printf("Error: incorrect parameter!\n");
             exit(0);
@@ -587,12 +587,12 @@ int main(int c, char *v[]){
             } else {
                 strcpy(initial_dir, v[6]);
             }
-        }   
+        }
     } else {
         printf("Error: insufficient parameter!\n");
         exit(0);
     }
-    
+
     printf("Initial TID: %ld\n",pthread_self());
     printf("INITIAL: %s\n", initial_dir);
     printf("OUTPUT: %s\n", output_path);
