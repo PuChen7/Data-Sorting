@@ -31,10 +31,7 @@ pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 
-<<<<<<< HEAD
-=======
 
->>>>>>> new-parameter-version
 /*
 struct ArgsForSorting{
     char* input_path;
@@ -471,26 +468,13 @@ void *recur(void *arg_path){
             || strstr(thread_path[path_index],"-sorted")){//found csv
                 continue;
             }
-<<<<<<< HEAD
-              // pthread_mutex_lock(&sort_lock);
-              // headerNumber = count_header(thread_path[localcounter]);
-              // //printf("valid csv index :%d header:%d path:%s\n",tidindex,headerNumber,thread_path[localcounter]);
-              // pthread_mutex_unlock(&sort_lock);
-              // if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
-              //   printf("%s not a valid csv\n",thread_path[localcounter]);
-              //   continue;
-              // }
-            pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
-
-        }
-=======
-            // pthread_mutex_lock(&count_lock);
-            // if(count_header(thread_path[path_index])!=28){
-            //   printf("%s invalid csv\n",thread_path[path_index]);
-            //   pthread_mutex_unlock(&count_lock);
-            //   break;
-            // }
-            // pthread_mutex_unlock(&count_lock);
+            pthread_mutex_lock(&count_lock);
+            if(count_header(thread_path[path_index])!=28){
+              printf("%s invalid csv\n",thread_path[path_index]);
+              pthread_mutex_unlock(&count_lock);
+              continue;
+            }
+            pthread_mutex_unlock(&count_lock);
             //pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[path_index]);
 
             strcpy(file_dictionary[fileindex++],thread_path[path_index]);
@@ -499,7 +483,6 @@ void *recur(void *arg_path){
 
         }
 
->>>>>>> new-parameter-version
     }
     closedir(dir);
     return NULL;
@@ -707,12 +690,13 @@ int main(int c, char *v[]){
     for(;i<tidindex;i++){
       pthread_join(tid[i],NULL);
     }
-    pthread_mutex_lock(&csv_lock);
+
+    pthread_mutex_lock(&count_lock);
     i=0;
     for(; i <fileindex;i++){
-      printf("%s index %d\n",file_dictionary[i],i );
+      printf("main : %s index %d\n",file_dictionary[i],i );
     }
-    pthread_mutex_unlock(&csv_lock);
+    pthread_mutex_unlock(&count_lock);
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
     pthread_mutex_destroy(&csv_lock);
