@@ -1,3 +1,5 @@
+//new
+
 #include <stdio.h>
 #include <sys/time.h>
 #include <signal.h>
@@ -18,21 +20,17 @@
 #define VALID_MOVIE_HEADER_NUMBER 28
 #define VALID_USAGE   "invalid argument numbers\ncorrect usage :./sample -c <column> (other args are optional after this)-d<directory to start> -o<outputdirectory>"
 //global
-static int *pCounter;
 char* sort_value_type;
 int tidindex = 0;
 int fileindex = 0;
 pthread_t tid[10000];
 int pathcounter = 0;
-
 pthread_mutex_t path_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t threadlock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 
-struct node *tid_array_head[10000];
-struct node *tid_array_prev[10000];
 
 /*
 struct ArgsForSorting{
@@ -45,9 +43,8 @@ struct ArgsForRecur{
     char* output_path;
 };
 */
-char* output_path;
-char thread_path[1000][500];
-char file_dict[1000][500];
+char file_dictionary[1000][300];
+char thread_path[1000][300];
 #define VALID_MOVIE_HEADER_NUMBER 28
 
 
@@ -160,8 +157,7 @@ int count_header(char* input_path){
   char * headerLine=NULL;
   char line[1024];
   while (fgets(line, 1024, input_file)){
-
-      char* tmp = line;
+      char* tmp = strdup(line);
       char *token = strtok_single(tmp, ",");
       if(rowNumber==0){
           headerLine = strdup(line);
@@ -175,59 +171,48 @@ int count_header(char* input_path){
               value_type_number++;    // update the number of columns(value types).
           }
           free(headerLine);
+          free(tmp);
           break;
       }
     }
-
   fclose(input_file);
   return value_type_number;
 }
 
-void *sort_one_file(void* arg_path){
+void sort_one_file(void* arg_path){
     pthread_mutex_lock(&sort_lock);
-    int tid = pthread_self();
-    tid = tid%10000;
-    printf("\ntid %d\n\n", tid);
+    char* tmp_path = (char*)arg_path;
 
-
-    //struct ArgsForSorting* sortArgs = (struct ArgsForSorting*) argument;
-    char* tmp_path = arg_path;
     //output_path = tmp_path;
-    printf("sort one file: %s\n", tmp_path);
-    FILE    *input_file;
+    FILE    *input_file = fopen(tmp_path, "r");
 
-    input_file = fopen(tmp_path, "r");
+    //input_file
 
     if (input_file == NULL){
-        printf("hahahaha\n");
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
-
         fclose(input_file);
-        return NULL;
+        return ;
     }
 
     // head of the Linked List
     struct node *head = NULL;
     struct node *prev = NULL;
-    tid_array_head[tid] = head;
-    tid_array_prev[tid] = prev;
     char line[1024];    // temp array for holding csv file lines.
     int rowNumber=-1;    // hold the number of lines of the csv file.
     int value_type_number;    // hold the number of value types(column numbers).
     char* headerLine=NULL;   // hold the first line of the csv file, which is the value types.
     int isFirstElement = 0; // mark the first element in LL
-    //fgets(line, 1024, input_file);
+
     // loop for reading the csv file line by line.
 
     while (fgets(line, 1024, input_file)){
-
         rowNumber++;
-
         char* tmp = strdup(line);
-        printf("#### %s", tmp);
+        //printf("#### %s", tmp);
         // first row
         // Returns first token
         char *token = strtok_single(tmp, ",");
+
 
         if(rowNumber==0){
 
@@ -244,7 +229,8 @@ void *sort_one_file(void* arg_path){
 
                 value_type_number++;    // update the number of columns(value types).
             }
-            //free(tmp);
+            free(tmp);
+
             continue;
         }
 
@@ -260,24 +246,23 @@ void *sort_one_file(void* arg_path){
         int tailerDoubleQuotes =0;
 
         char * tempStr;
-        char  tempCell[1024];
+        char  tempCell[100000];
         char *dummy = NULL;
         char * KillerQueen;
 
         while (token != NULL){
-            printf("\nTOKENTOKEN: %s\n", token);
+            // printf("\nTOKENTOKEN: %s\n", token);
 
             if(token[strlen(token)-1] == '\n'){
                 int len = strlen(token);
                 token[len-1]='\0';//make it end of string
             }
 
-            char *tempStr = trimwhitespace(token);
-
+            tempStr = trimwhitespace(token);
 
             if(tempStr[0] == '"'){
                 headerDoubleQuotes=1;
-                //strcpy(tempCell[0],"");
+                strcpy(tempCell,"");
             }
 
             if(tempStr[strlen(tempStr)-1] == '"'){
@@ -286,16 +271,13 @@ void *sort_one_file(void* arg_path){
             }
             if(headerDoubleQuotes== 1 && tailerDoubleQuotes == 0){
                 dummy=strdup(tempStr);
-                printf("DUMMY: %s\n", tempStr);
                 int len =strlen(dummy);
                 dummy[len]=',';
                 dummy[len+1]='\0';
-                //printf("DUMMY AFTER: %s\n", dummy);
                 strcat(tempCell, dummy);
             }else if(tailerDoubleQuotes == 1){
 
                 dummy=strdup(tempStr);
-                printf("DUMMY 2222: %s\n", tempStr);
                 strcat(tempCell, dummy);
                 headerDoubleQuotes=0;
             }
@@ -309,16 +291,16 @@ void *sort_one_file(void* arg_path){
                 new_array[counter] = *token ? trimwhitespace(token) : EMPTY_STRING; // store token into array
                 counter++;
             }
-
             token = strtok_single(NULL, ",");
         }
-        //free(dummy);
+        free(dummy);
+
+
 
         // create a new node
         // rowNumber starts from 1
         struct node *temp = (struct node*) malloc(sizeof(struct node));
         temp-> line_array = (char**)malloc(value_type_number*sizeof (char*));
-
 
         int i = 0;
         for(;i<value_type_number;i++){
@@ -327,31 +309,31 @@ void *sort_one_file(void* arg_path){
         temp-> next = NULL;
 
         if (isFirstElement == 0){
-            temp-> next = tid_array_head[tid];
-            tid_array_head[tid] = temp;
+            temp-> next = head;
+            head = temp;
             isFirstElement = 1;
-            tid_array_prev[tid] = tid_array_head[tid];
-            //free(tmp);
+            prev = head;
+            free(tmp);
             free(new_array);
+
             continue;
         }
-        tid_array_prev[tid]-> next = temp;
-        tid_array_prev[tid] = temp;
-
+        prev-> next = temp;
+        prev = temp;
         free(new_array);
         free(tmp);
+
     }
 
-    //pthread_t ttt = tid[tidindex];
-    //printf("^^^^^^^ %d\n", tid[0]);
+
 
     char* headerArray[value_type_number];   // this array hold the first row.
     initValueTypesArray(headerArray,value_type_number,headerLine);
 
     //resuage of temp to 'copy' a head, then pass it to initDataArray to store 2d data array
     struct node *temp = (struct node*) malloc(sizeof(struct node));
-    temp-> line_array = tid_array_head[tid]->line_array;
-    temp-> next = tid_array_head[tid] -> next;
+    temp-> line_array = head->line_array;
+    temp-> next = head -> next;
 
 
     //[row][column]
@@ -374,7 +356,7 @@ void *sort_one_file(void* arg_path){
     }
     // the type is not found in the file. ERROR.
     if (isFound == 1){
-        //printf("Error: The value type was not found in csv file!\n");
+        printf("Error: The value type was not found in csv file!\n");
 
     }else{
 
@@ -402,38 +384,38 @@ void *sort_one_file(void* arg_path){
         int MAXROW=rowNumber-1;
 
 
-        //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
         if(MAXROW>=0){
             mergeSort(sort_array, 0, MAXROW,numeric);
         }
+
         //print header
-        count=0;
-        for(;count<value_type_number;count++){
-            count==(value_type_number-1)?
-            printf("%s\n", headerArray[count])
-            :printf("%s,", headerArray[count]);
+        // count=0;
+        // for(;count<value_type_number;count++){
+        //     count==(value_type_number-1)?
+        //     printf("%s\n", headerArray[count])
+        //     :printf("%s,", headerArray[count]);
+        //
+        // }
+        // //print content
+        // count=0;
+        // for(;count<MAXROW+1;count++){
+        //     for(i=0;i<dataCol;i++){
+        //         i==(dataCol-1)?
+        //         printf("%s\n",dataArray[sort_array[count].index][i])
+        //         :printf("%s,",dataArray[sort_array[count].index][i]);
+        //     }//end of line
+        // }
 
-        }
-        //print content
-        count=0;
-        for(;count<MAXROW+1;count++){
-            for(i=0;i<dataCol;i++){
-                i==(dataCol-1)?
-                printf("%s\n",dataArray[sort_array[count].index][i])
-                :printf("%s,",dataArray[sort_array[count].index][i]);
-            }//end of line
-        }
-
-
+        printf("this time %d\n",MAXROW);
 
         free(sort_array);
     }
 
     // free Linked List
     struct node *tmp;
-    while (tid_array_head[tid] != NULL){
-        tmp = tid_array_head[tid];
-        tid_array_head[tid] = tid_array_head[tid]->next;
+    while (head != NULL){
+        tmp = head;
+        head = head->next;
         int i = 0;
         for(;i<value_type_number;i++){
             free(tmp-> line_array[i]);
@@ -447,122 +429,69 @@ void *sort_one_file(void* arg_path){
 
     fclose(input_file);
     pthread_mutex_unlock(&sort_lock);
-    return NULL;
+
+    return ;
 }
 
-
-// Recursively call thread to sort or traverse
 void *recur(void *arg_path){
     char* tmp_path = arg_path;
-    printf("path: %s\n", tmp_path);
-
-    pthread_t waittid[10000];
-    int countthread = 0, i, localcounter = 0, chunk = 512, joined = 0;
-
-    //struct ArgsForRecur* recurArgs = (struct ArgsForRecur*) argument;
 
     DIR *dir = opendir(tmp_path);
-    //printf("tmp_path: %s\n", tmp_path);
-    pthread_t current_tid;
 
-    if (dir == NULL){
-        printf("No such directory\n");
-        exit(0);
-    }
+
+    int i, path_index = 0;
 
     struct dirent *pDirent;
 
+    if (dir == NULL){
+        printf("No such directory\n");
+        return NULL;
+    }
+
+    int csvLooper=0;
     while (pDirent =readdir(dir)){
-        if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0 || pDirent->d_name[0] == '.')
+        if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0)
             continue;
 
         pthread_mutex_lock(&count_lock);
-        localcounter = pathcounter % 1000;
+        path_index = pathcounter % 1000;
         pathcounter++;
+        sprintf(thread_path[path_index], "%s/%s", tmp_path, pDirent->d_name);
         pthread_mutex_unlock(&count_lock);
-        // update path
 
-        pthread_mutex_lock(&path_lock);
-        //thread_path[localcounter] = strcat(strcat(tmp_path,"/"),pDirent->d_name);
-        sprintf(thread_path[localcounter], "%s/%s", tmp_path, pDirent->d_name);
-        pthread_mutex_unlock(&path_lock);
-        // if it is a directory, continue traversing
         if (pDirent->d_type == DT_DIR){
-            //printf("tid %d\n", pthread_self());
-            pthread_create(&current_tid, NULL, (void *)&recur, (void *)&thread_path[localcounter]);
+            pthread_create(&tid[tidindex++], NULL, (void *)&recur, (void *)&thread_path[path_index]);
+
             continue;
         } else {
             // if it is a new csv, sort it.
-            if(thread_path[localcounter]&&strcmp("csv",get_filename_ext(pDirent->d_name))==0 && strstr(pDirent->d_name,"-sorted")==NULL){//found csv
-
-                pthread_mutex_lock(&csv_lock);
-
-                /*
-                char  BiteTheDust[1024];
-                char  outP[outputLength];
-                char  inP[strlen(thread_path[localcounter])];
-
-
-                strcpy(outP,output_path);
-                strcpy(inP,thread_path[localcounter]);
-
-                char* fileNoExtension = strdup(remove_ext(pDirent->d_name));
-                strcpy(BiteTheDust,sort_value_type);
-                char outputPath[1024];
-                strcpy(outputPath,strcat(strcat(strcat(strcat(outP,"/"),strcat(fileNoExtension,"-sorted<")),BiteTheDust),">.csv"));
-                char inputPath[1024];
-                strcpy(inputPath,strcat(strcat(inP,"/"),strcat(pDirent->d_name,".csv")));
-                int headerNumber = count_header(inputPath);
-                output_path = outputPath;
-
-                if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
-                    free(fileNoExtension);
-                    continue;
-                }
-                */
-                //struct ArgsForSorting *sortArgs = malloc(sizeof(struct ArgsForSorting));
-                //sortArgs->input_path = inputPath;
-                //sortArgs->output_path = outputPath;
-
-                int headerNumber = count_header(thread_path[localcounter]);
-
-                pthread_mutex_unlock(&csv_lock);
-                printf("%s %d\n",thread_path[localcounter],fileindex );
-                strcpy(file_dict[fileindex++],thread_path[localcounter]);
-
-
-                //pthread_create(&current_tid, NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
+            if(strlen(thread_path[path_index]) < 4 || strcmp(thread_path[path_index] + strlen(thread_path[path_index]) - 4,".csv") != 0
+            || strstr(thread_path[path_index],"-sorted")){//found csv
+                continue;
             }
+            if(count_header(thread_path[path_index])!=28){
+              printf("%s invalid csv\n",thread_path[path_index]);
+              break;
+            }
+            strcpy(file_dictionary[fileindex],thread_path[path_index]);
+            //printf("%s csv index %d\n",thread_path[path_index],fileindex++);
+            //pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[path_index]);
 
         }
-        waittid[countthread++] = current_tid;
-        pthread_mutex_lock(&threadlock);
 
-        tid[tidindex++] = current_tid;
-
-        //printf("CURENT: %d, index: %d\n", current_tid, tidindex);
-
-        pthread_mutex_unlock(&threadlock);
-        // pthread_join(currtid, NULL);
-        if (countthread == chunk) {
-            for (i = joined; i < countthread; i++) {
-                pthread_join(waittid[i], NULL);
-            }
-            joined = countthread;
-            chunk += 512;
-        }
-    }
-    for (i = joined; i < countthread; i++) {
-        pthread_join(waittid[i], NULL);
     }
     closedir(dir);
+    return NULL;
 }
 
+void ifPathCorrect(char* path){
+    if (strstr(path, "//") != NULL){
+        printf("Error: incorrect path!\n");
+        exit(0);
+    }
+}
 
 int main(int c, char *v[]){
-
-    output_path = malloc(200*sizeof(char));
-
 
     if(c<3){
       printf("%s",VALID_USAGE);
@@ -570,247 +499,111 @@ int main(int c, char *v[]){
 
     struct dirent *pDirent;
     DIR *pDir;
+    //char cwd[1024];
+
+    sort_value_type = v[1];
+    // path for output sorted csv
+    char output_path[500] = ".";
+    // path for starting dir
+    char initial_dir[500] = ".";
+
+    char abs_path[1024];
+
     char cwd[1024];
-    pCounter = mmap(NULL, sizeof *pCounter, PROT_READ | PROT_WRITE,
-                        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    *pCounter = 0;
-
-
     getcwd(cwd, sizeof(cwd));
+    int cwd_len = strlen(cwd);
+
+    int isAbs = 1;
 
 
-    char path_tmp[300];
-    char* path;
-    char path_modified[300];
-    char output_tmp[300];
-    char output_final[300];
-    //char* output_path_tmp = NULL;
-    char newStr[300];
-    char newStr2[300];
+    // arguments less than 3, error
+    if (c < 3){
+        printf("Error: insufficient parameters!\n");
+        exit(0);
+    }
 
-    int cIndex=1;
-    int secIndex=0;
-    int trdIndex=0;
     if (c == 3){
-        // current dir
-        path_tmp[0] = '.';
-        path = path_tmp;
+        //output_path = ".";
+        //strcpy(initial_dir, ".");
     } else if (c == 5){
-
-        if(strcmp(v[1],"-c")==0){
-          cIndex=1;
-          secIndex=3;
+        if (strstr(v[4], cwd) != NULL){
+            memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+            abs_path[strlen(v[4]) - cwd_len] = '\0';
+            isAbs = 0;
         }
-        else if(strcmp(v[3],"-c")==0){
-          cIndex=3;
-          secIndex=1;
-        }
-        else{
-        printf("%s",VALID_USAGE);
-        return 0;
-        }
-
-        if(strcmp(v[secIndex],"-d")==0){
-            // -d
-            char pat[300];
-            int matchingIndex;
-            if(strstr(v[secIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
-                }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[secIndex+1])==matchingIndex)
-                    pat[0]='.';
-            else{
-
-                strcpy(pat,v[secIndex+1]+matchingIndex);
-
-                if(strlen(pat)<=1) {
-                    if(strlen(pat)==0)
-                        pat[0]='.';
-                    if(pat[0]==' ')pat[0]='.';
-                    //pat[2]='\0';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pat[0]=='.');
-                    else if(pat[0]=='/'){
-                        newStr[0] = '.';
-                        for (; loopindex < strlen(pat)+1; loopindex++){
-                            newStr[loopindex] = pat[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr); loopindex++){
-                            pat[loopindex] = newStr[loopindex];
-                        }
-                    }
-                }
+        // check if -o or -d
+        ifPathCorrect(v[4]);
+        if (strcmp(v[3], "-d") == 0){
+            if (isAbs == 0){
+                strcpy(initial_dir, abs_path);
+            } else {
+                strcpy(initial_dir, v[4]);
+            }
+        } else if (strcmp(v[3], "-o") == 0){
+            if (isAbs == 0){
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[4]);
             }
 
-            path = pat;
-
-        }else if(strcmp(v[secIndex],"-o")==0){
-
-            // -o
-            path_tmp[0] = '.';
-            path = path_tmp;
-            char pat[300];
-            int matchingIndex;
-            if(strstr(v[secIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
-                }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[secIndex+1])==matchingIndex)
-                    pat[0]='.';
-            else{
-
-                strcpy(pat,v[secIndex+1]+matchingIndex);
-
-                if(strlen(pat)<=1) {
-                    if(strlen(pat)==0)
-                        pat[0]='.';
-                    if(pat[0]==' ')pat[0]='.';
-                    //pat[2]='\0';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pat[0]=='.');
-                    else if(pat[0]=='/'){
-                        newStr2[0] = '.';
-                        for (; loopindex < strlen(pat)+1; loopindex++){
-                            newStr2[loopindex] = pat[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr2); loopindex++){
-                            pat[loopindex] = newStr2[loopindex];
-                        }
-                    }
-                }
-            }
-            output_path = pat;
-
+        } else {
+            printf("Error: incorrect parameter!\n");
+            exit(0);
         }
-
     } else if (c == 7){
-            int argsGroup[3] ={1,3,5};
-            for(int init=0;init<3;init++){
-              if(strcmp(v[argsGroup[init]],"-c")==0){
-                cIndex=argsGroup[init];
-              }
-              else if(strcmp(v[argsGroup[init]],"-d")==0){
-                secIndex=argsGroup[init];
-              }
-              else if(strcmp(v[argsGroup[init]],"-o")==0){
-                trdIndex=argsGroup[init];
-              }
+        ifPathCorrect(v[4]);
+        ifPathCorrect(v[6]);
+        if (strcmp(v[3], "-d") == 0 && strcmp(v[5], "-o") == 0){
+            if (strstr(v[4], cwd) != NULL){
+                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+                abs_path[strlen(v[4]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path);
+            } else {
+                strcpy(initial_dir, v[4]);
             }
 
-            //-d
-            char pat[300];
-            int matchingIndex;
-            if(strstr(v[secIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
+            if (strstr(v[6], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+                abs_path2[strlen(v[6]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path2);
+            } else {
+                strcpy(output_path, v[6]);
             }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[secIndex+1])==matchingIndex)
-                    pat[0]='.';
-            else{
-
-                strcpy(pat,v[secIndex+1]+matchingIndex);
-
-                if(strlen(pat)<=1) {
-                    if(strlen(pat)==0)
-                        pat[0]='.';
-                    if(pat[0]==' ')pat[0]='.';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pat[0]=='.');
-                    else if(pat[0]=='/'){
-                        newStr[0] = '.';
-                        for (; loopindex < strlen(pat)+1; loopindex++){
-                            newStr[loopindex] = pat[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr); loopindex++){
-                            pat[loopindex] = newStr[loopindex];
-                        }
-                    }
-                }
+        } else if (strcmp(v[3], "-o") == 0 && strcmp(v[5], "-d") == 0){
+            if (strstr(v[4], cwd) != NULL){
+                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+                abs_path[strlen(v[4]) - cwd_len] = '\0';
+                strcpy(output_path, abs_path);
+            } else {
+                strcpy(output_path, v[4]);
             }
 
-            path = pat;
-        //======================================
-
-        // -o
-            char pato[300];
-            matchingIndex=0;
-            if(strstr(v[trdIndex+1],cwd)!=NULL){
-                matchingIndex = strlen(cwd);
-                }
-            else matchingIndex = 0 ;
-
-            if(strlen(v[trdIndex+1])==matchingIndex)
-                    pato[0]='.';
-            else{
-
-                strcpy(pato,v[trdIndex+1]+matchingIndex);
-
-                if(strlen(pato)<=1) {
-                    if(strlen(pato)==0)
-                        pato[0]='.';
-                    if(pato[0]==' ')pato[0]='.';
-                    //pato[2]='\0';
-                }
-                else {
-                    int loopindex = 1;
-                    if(pato[0]=='.');
-                    else if(pato[0]=='/'){
-                        newStr2[0] = '.';
-                        for (; loopindex < strlen(pato)+1; loopindex++){
-                            newStr2[loopindex] = pato[loopindex-1];
-                        }
-
-                        loopindex = 0;
-                        for (; loopindex < strlen(newStr2); loopindex++){
-                            pato[loopindex] = newStr2[loopindex];
-                        }
-                    }
-                }
+            if (strstr(v[6], cwd) != NULL){
+                char abs_path2[1024];
+                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+                abs_path2[strlen(v[6]) - cwd_len] = '\0';
+                strcpy(initial_dir, abs_path2);
+            } else {
+                strcpy(initial_dir, v[6]);
             }
-            output_path = pato;
-
+        }
+    } else {
+        printf("Error: insufficient parameter!\n");
+        exit(0);
     }
 
-    // get the sort value type
-    sort_value_type = v[cIndex+1];
-/*
-    pDir = opendir (path);
-    if (output_path == NULL){
-        output_path = path;
-    }
-*/
+    printf("Initial TID: %ld\n",pthread_self());
+    printf("INITIAL: %s\n", initial_dir);
+    printf("OUTPUT: %s\n", output_path);
+    recur((void *)initial_dir);
 
-    //struct ArgsForRecur *recurArgs = malloc(1000*sizeof(char));
-    //recurArgs->path = strdup(path);
-
-    //recurArgs->output_path = strdup(output_path);
-    char tmp_path_argIn[500] = ".";
-    if (output_path == NULL){
-        output_path = path;
+    int i = 0;
+    for(; i <fileindex;i++){
+      printf("%s index %d\n",file_dictionary[i],i );
     }
-    recur((void *)tmp_path_argIn);
 
-    int i =0;
-    for(;i<fileindex;i++){
-      printf("main %s %d\n",file_dict[i],i );
-    }
-    printf("ENDNENDNENDNEND\n");
+
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
     pthread_mutex_destroy(&csv_lock);
