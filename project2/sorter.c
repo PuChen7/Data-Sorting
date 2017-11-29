@@ -180,7 +180,7 @@ int count_header(char* input_path){
 }
 
 void sort_one_file(void* arg_path){
-    pthread_mutex_lock(&sort_lock);
+
     char* tmp_path = (char*)arg_path;
 
     //output_path = tmp_path;
@@ -428,7 +428,6 @@ void sort_one_file(void* arg_path){
     free(headerLine);
 
     fclose(input_file);
-    pthread_mutex_unlock(&sort_lock);
 
     return ;
 }
@@ -469,13 +468,18 @@ void *recur(void *arg_path){
             || strstr(thread_path[path_index],"-sorted")){//found csv
                 continue;
             }
-            if(count_header(thread_path[path_index])!=28){
-              printf("%s invalid csv\n",thread_path[path_index]);
-              break;
-            }
-            strcpy(file_dictionary[fileindex],thread_path[path_index]);
-            //printf("%s csv index %d\n",thread_path[path_index],fileindex++);
+            // pthread_mutex_lock(&count_lock);
+            // if(count_header(thread_path[path_index])!=28){
+            //   printf("%s invalid csv\n",thread_path[path_index]);
+            //   pthread_mutex_unlock(&count_lock);
+            //   break;
+            // }
+            // pthread_mutex_unlock(&count_lock);
             //pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[path_index]);
+
+            strcpy(file_dictionary[fileindex++],thread_path[path_index]);
+            //printf("%s csv index %d\n",thread_path[path_index],fileindex++);
+            //
 
         }
 
@@ -599,10 +603,15 @@ int main(int c, char *v[]){
     recur((void *)initial_dir);
 
     int i = 0;
+    for(;i<tidindex;i++){
+      pthread_join(tid[i],NULL);
+    }
+    pthread_mutex_lock(&csv_lock);
+    i=0;
     for(; i <fileindex;i++){
       printf("%s index %d\n",file_dictionary[i],i );
     }
-
+    pthread_mutex_unlock(&csv_lock);
 
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
