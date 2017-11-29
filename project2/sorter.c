@@ -181,9 +181,9 @@ int count_header(char* input_path){
   return value_type_number;
 }
 
-void sort_one_file(char* arg_path){
-
-    char* tmp_path = arg_path;
+void sort_one_file(void* arg_path){
+    pthread_mutex_lock(&sort_lock);
+    char* tmp_path = (char*)arg_path;
 
     //output_path = tmp_path;
     FILE    *input_file = fopen(tmp_path, "r");
@@ -193,7 +193,7 @@ void sort_one_file(char* arg_path){
     if (input_file == NULL){
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
         fclose(input_file);
-        return;
+        return ;
     }
 
     // head of the Linked List
@@ -430,6 +430,7 @@ void sort_one_file(char* arg_path){
     free(headerLine);
 
     fclose(input_file);
+    pthread_mutex_unlock(&sort_lock);
 
     return ;
 }
@@ -466,10 +467,9 @@ void *recur(void *arg_path){
     }
     // int grandPTID = pthread_self();
     // printf("\ngrand %ld\n",grandPTID );
-
+    int csvLooper=0;
     while (pDirent =readdir(dir)){
-        int currentPTID = pthread_self();
-        //printf("\nwhileloop %ld\n",currentPTID );
+
         if (strcmp(pDirent->d_name, ".") == 0 || strcmp(pDirent->d_name, "..") == 0)
             continue;
 
@@ -481,39 +481,35 @@ void *recur(void *arg_path){
 
         if (pDirent->d_type == DT_DIR){
             //printf("%s\n",thread_path[localcounter]);
-            //printf("your father %d self %d index:[%d]\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex);
+
+            //printf("your father %ld self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
             pthread_create(&tid[tidindex++], NULL, (void *)&recur, (void *)&thread_path[localcounter]);
-            //printf("you baby:%d , self %ld index:[%d]\n",tid[tidindex-1],pthread_self(),tidindex);
-            //if(pthread_self()!=currentPTID)break;
+
+            //printf("you baby:%ld , self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);            //if(pthread_self()!=currentPTID)break;
+            //printf("whileloop %ld %s\n\n",tid[tidindex-1>=0?tidindex-1:0],thread_path[localcounter] );
+
             continue;
         } else {
-            printf("\nwhileloop %ld\n",currentPTID );
             // if it is a new csv, sort it.
             if(strlen(thread_path[localcounter]) < 4 || strcmp(thread_path[localcounter] + strlen(thread_path[localcounter]) - 4,".csv") != 0
             || strstr(thread_path[localcounter],"-sorted")){//found csv
                 continue;
             }
-            //int headerNumber = count_header(thread_path[localcounter]);
-            printf("your father %d self %d index:[%d]\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex);
-            printf("%s\n",thread_path[localcounter]);
-
+            printf("valid csv index :%d\n",tidindex);
             pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
-            printf("you baby:%d , self %ld index:[%d]\n\n",tid[tidindex-1],pthread_self(),tidindex);
 
-
+            //int headerNumber = count_header(thread_path[localcounter]);
+            //printf("your father %ld self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
+            //printf("you baby:%ld , self %ld index:[%d] path:%s\n",tid[tidindex-1>=0?tidindex-1:0],pthread_self(),tidindex,thread_path[localcounter]);
+            //
         }
-        //waittid[countthread++] = current_tid;
-        // pthread_mutex_lock(&threadlock);
-        // printf("CURRENT TID: %u at %s\n", current_tid, thread_path[localcounter]);
-        // tid[tidindex++] = current_tid;
-        // pthread_mutex_unlock(&threadlock);
-        // if (countthread == chunk) {
-        //    for (i = joined; i < countthread; i++) {
-        //         pthread_join(waittid[i], NULL);
-        //     }
-        //     joined = countthread;
-        //     chunk += 512;
-        // }
+        //int currentPTID = pthread_self();
+        //printf("whileloop %ld %s\n\n",tid[tidindex-1>=0?tidindex-1:0],thread_path[localcounter] );
+        //continue;
+        // if(csvLooper==1)break;
+        // pthread_mutex_lock(&csv_lock);
+        // csvLooper++;
+        // pthread_mutex_unlock(&csv_lock);
     }
     closedir(dir);
     return NULL;
@@ -767,7 +763,6 @@ int main(int c, char *v[]){
         output_path = path;
     }
     printf("Initial TID: %ld\n",pthread_self());
-
     recur((void *)tmp_path_argIn);
 
     // int status = 0;
