@@ -483,14 +483,14 @@ void *recur(void *arg_path){
             || strstr(thread_path[localcounter],"-sorted")){//found csv
                 continue;
             }
-              pthread_mutex_lock(&sort_lock);
-              headerNumber = count_header(thread_path[localcounter]);
-              //printf("valid csv index :%d header:%d path:%s\n",tidindex,headerNumber,thread_path[localcounter]);
-              pthread_mutex_unlock(&sort_lock);
-              if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
-                printf("%s not a valid csv\n",thread_path[localcounter]);
-                continue;
-              }
+              // pthread_mutex_lock(&sort_lock);
+              // headerNumber = count_header(thread_path[localcounter]);
+              // //printf("valid csv index :%d header:%d path:%s\n",tidindex,headerNumber,thread_path[localcounter]);
+              // pthread_mutex_unlock(&sort_lock);
+              // if(headerNumber!=VALID_MOVIE_HEADER_NUMBER){
+              //   printf("%s not a valid csv\n",thread_path[localcounter]);
+              //   continue;
+              // }
             pthread_create(&tid[tidindex++], NULL, (void *)&sort_one_file, (void *)&thread_path[localcounter]);
 
         }
