@@ -359,9 +359,14 @@ void *sort_one_file(void* arg_path){
         j=0;
         dataArray[i]= malloc(sizeof (char*) * dataCol);
             for(; j< dataCol ;j++){
+                                    //printf("%s ",temp->line_array[j]);
+
                 dataArray[i][j]=temp->line_array[j];
+                //printf("%s ", dataArray[i][j]);
             }
             temp = temp->next;
+                                    //printf("\n");
+
     }
 
 
@@ -422,6 +427,16 @@ void *sort_one_file(void* arg_path){
         //     printf("%d\n", sort_array[test].index);
         // }
 
+        // i,j;
+        // i = 0;
+        // for(;i<dataRow;i++){
+        //     j=0;
+        //         for(; j< dataCol ;j++){
+        //             printf("%s,", dataArray[i][j]);
+        //         }              
+        //         printf("\n");                  
+        // }
+
 
         count_row += MAXROW+1;
         //printf("%d current row\n",count_row);
@@ -429,20 +444,35 @@ void *sort_one_file(void* arg_path){
         int col_counter = 0;
         for (; row_counter < MAXROW+1; row_counter++){
             for (; col_counter < 28; col_counter++){
+                // printf("%d ----",sort_array[row_counter].index);
+                //printf(" %s ",dataArray[sort_array[row_counter].index][col_counter]);
                 if (col_counter == 27){
                     int len = strlen(dataArray[sort_array[row_counter].index][col_counter]);
-                    dataArray[sort_array[row_counter].index][col_counter][len]='\r\n';
+                    dataArray[sort_array[row_counter].index][col_counter][len]='\n';
                     dataArray[sort_array[row_counter].index][col_counter][len+1]='\0';
                     final_sorted[row_counter+index_of_sorted][col_counter] = dataArray[sort_array[row_counter].index][col_counter];
                     //printf("%s ",final_sorted[row_counter+index_of_sorted][col_counter]);
                     //strcat(final_sorted[row_counter+index_of_sorted][col_counter], "\n");
+                    break;
+                } else {
+                    
+                    int len = strlen(dataArray[sort_array[row_counter].index][col_counter]);
+                    if (strstr(dataArray[sort_array[row_counter].index][col_counter], ",") == NULL){
+                        //      if (isNumeric(dataArray[sort_array[row_counter].index][col_counter]) != 1){
+                        // printf("%s*****%d***\n", dataArray[sort_array[row_counter].index][col_counter], strlen(dataArray[sort_array[row_counter].index][col_counter]));
+                        // }
+                        dataArray[sort_array[row_counter].index][col_counter][len]=',';
+                        dataArray[sort_array[row_counter].index][col_counter][len+1]='\0';
+                    //printf("%s***\n", dataArray[sort_array[row_counter].index][col_counter]);
+
+                    }
+                    final_sorted[row_counter+index_of_sorted][col_counter] = dataArray[sort_array[row_counter].index][col_counter];
                 }
-                int len = strlen(dataArray[sort_array[row_counter].index][col_counter]);
-                dataArray[sort_array[row_counter].index][col_counter][len]=',';
-                dataArray[sort_array[row_counter].index][col_counter][len+1]='\0';
-                final_sorted[row_counter+index_of_sorted][col_counter] = dataArray[sort_array[row_counter].index][col_counter];
+                
+                
                 //printf("%s ",final_sorted[row_counter+index_of_sorted][col_counter]);
             }
+            //printf("\n");
             col_counter = 0;            
         }
         index_of_sorted = index_of_sorted + row_counter;
@@ -821,7 +851,7 @@ int main(int c, char *v[]){
     int count2 = 0;
     for(; count2 < count_row; count2++){
         for (; count1 < dataCol; count1++){
-            printf("%s",final_sorted[count2][count1]);
+            // printf("%s",final_sorted[count2][count1]);
             fprintf(fp,"%s",final_sorted[count2][count1]);
         }   
         count1 = 0;
