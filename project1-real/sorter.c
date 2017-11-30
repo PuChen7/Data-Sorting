@@ -316,81 +316,82 @@ void sort_one_file(char* input_path,char* output_path){
       }
   }
   // the type is not found in the file. ERROR.
-  if (isFound == 1){
-      //printf("Error: The value type was not found in csv file!\n");
-
-  }else{
-
-  // store the column as an array
-  SortArray *sort_array;
-  sort_array = (SortArray*) malloc(rowNumber * sizeof(SortArray));
-  int count = 0;
-  int sortArraycount=0;
-  //a safer way to check if numeric
-  int numericFlag = 0;
-
-  while (count < rowNumber){
-          sort_array[count].index = count;
-          sort_array[count].str = dataArray[count][i];
-          numericFlag += isNumeric(sort_array[count].str);
-      count++;
-  }
-
-  // check if the value is digits or string
-  // return 0 for false, non-zero for true.
-  int numeric = numericFlag;
-
-
-  // if the string is a number, then sort based on the value of the number
-  // NOTE: numeric 0:false 1:true
-  int MAXROW=rowNumber-1;
-
-  //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
-  if(MAXROW>=0){
-      mergeSort(sort_array, 0, MAXROW,numeric);
-    }
-
-  //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
-
-  //print header
-  count=0;
-  for(;count<value_type_number;count++){
-      count==(value_type_number-1)?
-      fprintf(output_file, "%s\n", headerArray[count])
-      :fprintf(output_file, "%s,", headerArray[count]);
-
-  }
-  //print content
-  count=0;
-  for(;count<MAXROW+1;count++){
-      for(i=0;i<dataCol;i++){
-          i==(dataCol-1)?
-          fprintf(output_file, "%s\n",dataArray[sort_array[count].index][i])
-          :fprintf(output_file, "%s,",dataArray[sort_array[count].index][i]);
-      }//end of line
-  }
-
-  free(sort_array);
-
-}
-
-  // free Linked List
-  struct node *tmp;
-  while (head != NULL){
-      tmp = head;
-      head = head->next;
-      int i = 0;
-      for(;i<value_type_number;i++){
-        free(tmp-> line_array[i]);
-      }
-      free(tmp-> line_array);
-      free(tmp);
-  }
-
-  free(temp);
-  free(headerLine);
-  fclose(output_file);
-  fclose(input_file);
+//   if (isFound == 1){
+//       //printf("Error: The value type was not found in csv file!\n");
+//
+//   }else{
+//
+//   // store the column as an array
+//   SortArray *sort_array;
+//   sort_array = (SortArray*) malloc(rowNumber * sizeof(SortArray));
+//   int count = 0;
+//   int sortArraycount=0;
+//   //a safer way to check if numeric
+//   int numericFlag = 0;
+//
+//   while (count < rowNumber){
+//           sort_array[count].index = count;
+//           sort_array[count].str = dataArray[count][i];
+//           numericFlag += isNumeric(sort_array[count].str);
+//       count++;
+//   }
+//
+//   // check if the value is digits or string
+//   // return 0 for false, non-zero for true.
+//   int numeric = numericFlag;
+//
+//
+//   // if the string is a number, then sort based on the value of the number
+//   // NOTE: numeric 0:false 1:true
+//   int MAXROW=rowNumber-1;
+//
+//   //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+//   if(MAXROW>=0){
+//       mergeSort(sort_array, 0, MAXROW,numeric);
+//     }
+//
+//   //printf("col1:%s col2:%s\n",sort_array[0].str,sort_array[1].str);
+//
+//   //print header
+//   count=0;
+//   for(;count<value_type_number;count++){
+//       count==(value_type_number-1)?
+//       fprintf(output_file, "%s\n", headerArray[count])
+//       :fprintf(output_file, "%s,", headerArray[count]);
+//
+//   }
+//   //print content
+//   count=0;
+//   for(;count<MAXROW+1;count++){
+//       for(i=0;i<dataCol;i++){
+//           i==(dataCol-1)?
+//           fprintf(output_file, "%s\n",dataArray[sort_array[count].index][i])
+//           :fprintf(output_file, "%s,",dataArray[sort_array[count].index][i]);
+//       }//end of line
+//   }
+//
+//   free(sort_array);
+//
+// }
+  //
+  // // free Linked List
+  // struct node *tmp;
+  // while (head != NULL){
+  //     tmp = head;
+  //     head = head->next;
+  //     int i = 0;
+  //     for(;i<value_type_number;i++){
+  //       free(tmp-> line_array[i]);
+  //     }
+  //     free(tmp-> line_array);
+  //     free(tmp);
+  // }
+  //
+  // free(temp);
+  // free(headerLine);
+  // fclose(output_file);
+  // fclose(input_file);
+  return NULL;
 }
 void recur(DIR *pDir, struct dirent *pDirent, char* path, char* output_path){
 
