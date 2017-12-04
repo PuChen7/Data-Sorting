@@ -50,6 +50,7 @@ char file_dictionary[1000][300];
 char thread_path[1000][300];
 #define VALID_MOVIE_HEADER_NUMBER 28
 
+int sentCounter=0;
 
 char *strtok_single (char * str, char const * delims) {
     static char  * src = NULL;
@@ -122,16 +123,18 @@ void *send_request(char* send_file_path)
 {
     char* message=strdup(send_file_path);
 
-    printf("sent %s \n\n",message);
+    //printf("sent %s \n\n",message);
 
     pthread_mutex_lock(&sort_lock);
+    sentCounter++;
+
     if(send(sock , message , strlen(message) , 0) < 0)
     {
         puts("Send failed");
         return 1;
     }
 
-    char *server_reply = malloc(100);
+    char server_reply[100];
     if(recv(sock , server_reply , 100 , 0) < 0)
     {
         puts("recv failed");
@@ -140,10 +143,8 @@ void *send_request(char* send_file_path)
 
     puts("Server replies :");
     puts(server_reply);
-    free(server_reply);
-    free(message);
     pthread_mutex_unlock(&sort_lock);
-
+    free(message);
     return NULL;
 }
 
@@ -820,6 +821,7 @@ int main(int c, char *v[]){
     recur((void *)tmpInitDir);
 
 
+    printf("sent %d files\n",sentCounter);
     // FILE *fp;
     // char *cat_tmp = malloc(sizeof(char)*200);
     // strcpy(cat_tmp, "/AllFiles-sorted-<");

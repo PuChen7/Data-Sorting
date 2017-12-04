@@ -83,7 +83,7 @@ void *connection_handler(void *socket_desc)
     //Get the socket descriptor
     int sock = *(int*)socket_desc;
     int read_size;
-    char *client_message = malloc(100);
+    char *client_message = NULL;
 
     //Send some messages to the client
     //message = "Greetings! I am your connection handler\n";
@@ -93,11 +93,12 @@ void *connection_handler(void *socket_desc)
     // write(sock , message , strlen(message));
 
     //Receive a message from client
-    while( (read_size = recv(sock , client_message=(char*)realloc(client_message,100) , 100 , 0)) > 0 )
+    while( (read_size = recv(sock , client_message=(char*)malloc(2000) , 2000 , 0)) > 0 )
     {
         //Send the message back to client
-        printf("%s/n",client_message);
+        //printf("%s    ",client_message);
         write(sock , client_message , strlen(client_message));
+        free(client_message);
     }
 
     if(read_size == 0)
