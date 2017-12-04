@@ -541,16 +541,16 @@ void *recur(void *arg_path){
             || strstr(tmp_path,"-sorted")){//found csv
                 continue;
             }
-            // char* headerfile = strdup(tmp_path);
-            // int flag=0;
-            // if(count_header(tmp_path)==28){
-            //   flag =1 ;
-            // }
-            //if(flag){
+            char* headerfile = strdup(tmp_path);
+            int flag=0;
+            if(count_header(headerfile)==28){
+              flag =1 ;
+            }
+            if(flag){
               strcpy(file_dictionary[fileindex++],tmp_path);
               pthread_create(&tidgroup[tidlocalindex++], NULL, (void *)&send_request, (void *)tmp_path);
-            //}
-            //free(headerfile);
+            }
+            free(headerfile);
             continue;
         }
     }
