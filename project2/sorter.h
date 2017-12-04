@@ -36,7 +36,7 @@ int dataRow,dataCol;
 
 char *strtok_single (char * str, char const * delims);
 void initValueTypesArray(char** array,int arraySize,char* line);
-void initDataArray(char* array[dataRow][dataCol],struct node * data);
+char*** initDataArray(char** array,struct node * data);
 int isNumeric(char* str);
 char *trimwhitespace(char *str);
 void merge(SortArray* sort_array, int left, int middle, int right,int numeric);

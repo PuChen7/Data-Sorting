@@ -32,6 +32,11 @@ pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 
+char* headerArray[28];   // this array hold the first row.
+int check_header = 0;
+char **final_sorted[50000];
+int index_of_sorted = 0;
+int count_row = 0;
 
 SortArray *final_sorted;
 int index_of_sorted = 0;
@@ -80,28 +85,30 @@ void initValueTypesArray(char** array,int arraySize,char* line){
     int counter=0;
     while (token != NULL && counter<arraySize){
         if(token[strlen(token)-1] == '\n') token[strlen(token)-1]=0;
-        array[counter]=token;
+        strcpy(array[counter], token);
         token = strtok(NULL, ",");
         counter++;
     }
     return;
 }
 
-void initDataArray(char* array[dataRow][dataCol],struct node * data){
-    int i,j;
-    i = 0;
-    for(;i<dataRow;i++){
-    j=0;
-        for(; j< dataCol ;j++){
-            array[i][j]=data->line_array[j];
-        }
-        data = data->next;
-    }
-    return;
-}
+// char*** initDataArray(char*** array,struct node * data){
+//     int i,j;
+//     i = 0;
+//     for(;i<dataRow;i++){
+//     j=0;
+//         for(; j< dataCol ;j++){
+//             array[i][j]=data->line_array[j];
+//
+//         }
+//         data = data->next;
+//     }
+//     return array;
+// }
 
 // check if a string is numeric, 0 -> false, non-zero -> true
 int isNumeric(char* str){
+    //printf("%s\n",str);
     if (str == NULL || *str == '\0' || isspace(*str)){
       return 0;
     }
@@ -184,27 +191,23 @@ int count_header(char* input_path){
   return value_type_number;
 }
 
-void sort_one_file(char* arg_path){
-   
-    char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
-    printf("cwd %s\n",cwd);
-    //pthread_mutex_lock(&sort_lock);
+void *sort_one_file(void* arg_path){
+    printf("\n\npassed file : %s\n\n",arg_path );
+    pthread_mutex_lock(&sort_lock);
 
-    printf("!!!!! %s\n", arg_path);
+    char* tmp_path = (char*)arg_path;
 
-    // //output_path = tmp_path;
-    FILE    *input_file = fopen(arg_path, "r");
-    
-    // //input_file
-    
+    //output_path = tmp_path;
+    FILE    *input_file = fopen(tmp_path, "r");
+    //input_file
+
     if (input_file == NULL){
         fprintf(stderr, "Error : Failed to open entry file - %s\n", strerror(errno));
         fclose(input_file);
-        return;
+        return NULL;
     }
-    
-    // // head of the Linked List
+
+    // head of the Linked List
     struct node *head = NULL;
     struct node *prev = NULL;
     char line[1024];    // temp array for holding csv file lines.
@@ -212,8 +215,9 @@ void sort_one_file(char* arg_path){
     int value_type_number;    // hold the number of value types(column numbers).
     char* headerLine=NULL;   // hold the first line of the csv file, which is the value types.
     int isFirstElement = 0; // mark the first element in LL
-    
+
     // loop for reading the csv file line by line.
+
     while (fgets(line, 1024, input_file)){
         rowNumber++;
         char* tmp = strdup(line);
@@ -221,59 +225,59 @@ void sort_one_file(char* arg_path){
         // first row
         // Returns first token
         char *token = strtok_single(tmp, ",");
-    
-    
+
+
         if(rowNumber==0){
-    
+
             headerLine = strdup(line);
             value_type_number = 0;
-    
+
             while (token != NULL){
-    
+
                 if(token[strlen(token)-1] == '\n'){
                     int len = strlen(token);
                     token[len-1]='\0';//make it end of string
                 }
                 token = strtok_single(NULL, ",");
-    
+
                 value_type_number++;    // update the number of columns(value types).
             }
             free(tmp);
-    
+
             continue;
         }
-    
+
         /* malloc array for holding tokens.*/
         char** new_array = malloc(value_type_number * sizeof(char*));
-    
+
         // using token to split each line.
         // store each token into corresponding array cell.
         int counter = 0;
-    
+
         //variables in order to keep tracking of cells that contains , value
         int headerDoubleQuotes = 0;
         int tailerDoubleQuotes =0;
-    
+
         char * tempStr;
-        char  tempCell[1024];
+        char  tempCell[100000];
         char *dummy = NULL;
         char * KillerQueen;
-    
+
         while (token != NULL){
             // printf("\nTOKENTOKEN: %s\n", token);
-    
+
             if(token[strlen(token)-1] == '\n'){
                 int len = strlen(token);
                 token[len-1]='\0';//make it end of string
             }
-    
+
             tempStr = trimwhitespace(token);
-    
+
             if(tempStr[0] == '"'){
                 headerDoubleQuotes=1;
                 strcpy(tempCell,"");
             }
-    
+
             if(tempStr[strlen(tempStr)-1] == '"'){
                 headerDoubleQuotes=0;
                 tailerDoubleQuotes=1;
@@ -285,12 +289,12 @@ void sort_one_file(char* arg_path){
                 dummy[len+1]='\0';
                 strcat(tempCell, dummy);
             }else if(tailerDoubleQuotes == 1){
-    
+
                 dummy=strdup(tempStr);
                 strcat(tempCell, dummy);
                 headerDoubleQuotes=0;
             }
-    
+
             if(tailerDoubleQuotes == 1){
                 tailerDoubleQuotes=0;
                 new_array[counter] = tempCell;
@@ -303,20 +307,20 @@ void sort_one_file(char* arg_path){
             token = strtok_single(NULL, ",");
         }
         free(dummy);
-    
-    
-    
+
+
+
         // create a new node
         // rowNumber starts from 1
         struct node *temp = (struct node*) malloc(sizeof(struct node));
         temp-> line_array = (char**)malloc(value_type_number*sizeof (char*));
-    
+
         int i = 0;
         for(;i<value_type_number;i++){
             temp-> line_array[i]=strdup(new_array[i]);
         }
         temp-> next = NULL;
-    
+
         if (isFirstElement == 0){
             temp-> next = head;
             head = temp;
@@ -324,34 +328,57 @@ void sort_one_file(char* arg_path){
             prev = head;
             free(tmp);
             free(new_array);
-    
+
             continue;
         }
         prev-> next = temp;
         prev = temp;
         free(new_array);
         free(tmp);
-    
+
     }
-    
-    char* headerArray[value_type_number];   // this array hold the first row.
-    initValueTypesArray(headerArray,value_type_number,headerLine);
-    
+
+    if (check_header == 0){
+        initValueTypesArray(headerArray,value_type_number,headerLine);
+        check_header = 1;
+    }
+
+
     //resuage of temp to 'copy' a head, then pass it to initDataArray to store 2d data array
     struct node *temp = (struct node*) malloc(sizeof(struct node));
     temp-> line_array = head->line_array;
     temp-> next = head -> next;
-    
-    
+
+
     //[row][column]
-    dataCol= value_type_number; 
+    dataCol= value_type_number;
     dataRow = rowNumber;
-    
-    char* dataArray[dataRow][dataCol];
-    initDataArray(dataArray,temp);
+
+
+    char** dataArray[dataRow];
+    int i,j;
+    i = 0;
+    for(;i<dataRow;i++){
+        j=0;
+        dataArray[i]= malloc(sizeof (char*) * dataCol);
+            for(; j< dataCol ;j++){
+                                    //printf("%s ",temp->line_array[j]);
+
+                dataArray[i][j]=temp->line_array[j];
+                //printf("%s ", dataArray[i][j]);
+            }
+            temp = temp->next;
+                                    //printf("\n");
+
+    }
+
+
+    //free(dataArray);
+
+
     /* sorintg */
     // first need to decide which column to sort. Do the search on headerArray.
-    int i = 0;
+     i = 0;
     int isFound = 1;
     for (; i < value_type_number; i++){
         if (strcmp(trimwhitespace(headerArray[i]), sort_value_type) == 0){
@@ -359,88 +386,130 @@ void sort_one_file(char* arg_path){
             break;  // i is the index of the column
         }
     }
+
+
+
     // the type is not found in the file. ERROR.
     if (isFound == 1){
         printf("Error: The value type was not found in csv file!\n");
-    
+
     }else{
-    
-        // store the column as an array
+        //store the column as an array
         SortArray *sort_array;
         sort_array = (SortArray*) malloc(rowNumber * sizeof(SortArray));
         int count = 0;
         int sortArraycount=0;
         //a safer way to check if numeric
         int numericFlag = 0;
-    
+
         while (count < rowNumber){
             sort_array[count].index = count;
             sort_array[count].str = dataArray[count][i];
             numericFlag += isNumeric(sort_array[count].str);
             count++;
         }
-    
+
         // check if the value is digits or string
         // return 0 for false, non-zero for true.
         int numeric = numericFlag;
-    
+
         // if the string is a number, then sort based on the value of the number
         // NOTE: numeric 0:false 1:true
         int MAXROW=rowNumber-1;
-    
-    
+
+        // int test = 0;
+        // for (; test < MAXROW+1; test++){
+        //     printf("%d\n", sort_array[test].index);
+        // }
         if(MAXROW>=0){
             mergeSort(sort_array, 0, MAXROW,numeric);
         }
-        
-        // int row_counter = 0;
-        // for (; row_counter < dataRow; row_counter++){
-        //     final_sorted[row_counter+index_of_sorted].index = row_counter;
-        //     final_sorted[row_counter+index_of_sorted].str = sort_array[row_counter].str;
-        // }
-        // index_of_sorted = index_of_sorted + row_counter-1;
 
-        //print header
-        // count=0;
-        // for(;count<value_type_number;count++){
-        //     count==(value_type_number-1)?
-        //     printf("%s\n", headerArray[count])
-        //     :printf("%s,", headerArray[count]);
-        //
+        // int test = 0;
+        // for (; test < MAXROW+1; test++){
+        //     printf("%d\n", sort_array[test].index);
         // }
-        // //print content
-        // count=0;
-        // for(;count<MAXROW+1;count++){
-        //     for(i=0;i<dataCol;i++){
-        //         i==(dataCol-1)?
-        //         printf("%s\n",dataArray[sort_array[count].index][i])
-        //         :printf("%s,",dataArray[sort_array[count].index][i]);
-        //     }//end of line
+
+        // i,j;
+        // i = 0;
+        // for(;i<dataRow;i++){
+        //     j=0;
+        //         for(; j< dataCol ;j++){
+        //             printf("%s,", dataArray[i][j]);
+        //         }
+        //         printf("\n");
         // }
-    
-        printf("this time %d\n",MAXROW);
-    
-        free(sort_array);
-    }
-    
-    // free Linked List
-    struct node *tmp;
-    while (head != NULL){
-        tmp = head;
-        head = head->next;
-        int i = 0;
-        for(;i<value_type_number;i++){
-            free(tmp-> line_array[i]);
+
+
+        count_row += MAXROW+1;
+        //printf("%d current row\n",count_row);
+        int row_counter = 0;
+        int col_counter = 0;
+        for (; row_counter < MAXROW+1; row_counter++){
+            for (; col_counter < 28; col_counter++){
+                // printf("%d ----",sort_array[row_counter].index);
+                //printf(" %s ",dataArray[sort_array[row_counter].index][col_counter]);
+                if (col_counter == 27){
+                    int len = strlen(dataArray[sort_array[row_counter].index][col_counter]);
+                    dataArray[sort_array[row_counter].index][col_counter][len]='\n';
+                    dataArray[sort_array[row_counter].index][col_counter][len+1]='\0';
+                    final_sorted[row_counter+index_of_sorted][col_counter] = dataArray[sort_array[row_counter].index][col_counter];
+                    //printf("%s ",final_sorted[row_counter+index_of_sorted][col_counter]);
+                    //strcat(final_sorted[row_counter+index_of_sorted][col_counter], "\n");
+                    break;
+                } else {
+
+                    int len = strlen(dataArray[sort_array[row_counter].index][col_counter]);
+                    if (strstr(dataArray[sort_array[row_counter].index][col_counter], ",") == NULL){
+                        //      if (isNumeric(dataArray[sort_array[row_counter].index][col_counter]) != 1){
+                        // printf("%s*****%d***\n", dataArray[sort_array[row_counter].index][col_counter], strlen(dataArray[sort_array[row_counter].index][col_counter]));
+                        // }
+                        dataArray[sort_array[row_counter].index][col_counter][len]=',';
+                        dataArray[sort_array[row_counter].index][col_counter][len+1]='\0';
+                    //printf("%s***\n", dataArray[sort_array[row_counter].index][col_counter]);
+
+                    }
+                    final_sorted[row_counter+index_of_sorted][col_counter] = dataArray[sort_array[row_counter].index][col_counter];
+                }
+
+
+                //printf("%s ",final_sorted[row_counter+index_of_sorted][col_counter]);
+            }
+            //printf("\n");
+            col_counter = 0;
         }
-        free(tmp-> line_array);
-        free(tmp);
-    }
-    
-    free(temp);
-    free(headerLine);
-    fclose(input_file);
-    
-    return;
+        index_of_sorted = index_of_sorted + row_counter;
+
+    // for (; row_counter < dataRow; row_counter++){
+    //     final_sorted[row_counter+index_of_sorted].index = row_counter;
+    //     final_sorted[row_counter+index_of_sorted].str = dataArray[sort_array[];
+    // }
+
+
+     //free(sort_array);
+  }
+
+
+    // // free Linked List
+    // struct node *tmp;
+    // while (head != NULL){
+    //     tmp = head;
+    //     head = head->next;
+    //     int i = 0;
+    //     for(;i<value_type_number;i++){
+    //         free(tmp-> line_array[i]);
+    //     }
+    //     free(tmp-> line_array);
+    //     free(tmp);
+    // }
+
+    // free(temp);
+    // free(headerLine);
+    // fclose(input_file);
+    // free(tmp_path);
+
+    pthread_mutex_unlock(&sort_lock);
+
 }
 
 void *recur(void *arg_path){
@@ -471,7 +540,7 @@ void *recur(void *arg_path){
         char* tmp_path=(char*)malloc(sizeof tmppath+ sizeof pDirent->d_name);
         //strcat(strcat(strcat(tmp_path,tmppath),"/"),pDirent->d_name);
         sprintf(tmp_path, "%s/%s", tmppath, pDirent->d_name);
-        printf("temp path : %s\n",tmp_path );
+        // printf("temp path : %s\n",tmp_path );
         //printf("read some file %s %s\n", tmppath,pDirent->d_name);
         //pthread_mutex_unlock(&count_lock);
 
@@ -501,22 +570,24 @@ void *recur(void *arg_path){
             //pthread_mutex_unlock(&count_lock);
             // pthread_create(&tidgroup[tidlocalindex], NULL, (void *)&sort_one_file, (void *)tmp_path);
             // tidlocalindex++;
-            //pthread_mutex_lock(&count_lock);
+            // pthread_mutex_lock(&count_lock);
             strcpy(file_dictionary[fileindex],tmp_path);
             fileindex++;
-            if(count_header(tmp_path)!=28){
-              printf("invalid csv %s \n",tmp_path);
-              //pthread_mutex_unlock(&count_lock);
-              continue;
-            }
-            //pthread_mutex_unlock(&count_lock);
+            // if(count_header(tmp_path)!=28){
+            //   printf("invalid csv %s \n",tmp_path);
+            //   pthread_mutex_unlock(&count_lock);
+            //   continue;
+            // }
+            // pthread_mutex_unlock(&count_lock);
+            //
 
-
-            //pthread_create(&tidgroup[100], NULL, (void *)&sort_one_file, (void *)tmp_path);
-            // pthread_join(tidgroup[100],NULL);
+            pthread_create(&tidgroup[tidlocalindex], NULL, (void *)&sort_one_file, (void *)tmp_path);
+            tidlocalindex++;
+            //pthread_join(tidgroup[500],NULL);
+            //printf("come back %s\n", tmp_path);
+            //tidlocalindex++;
 
             // pthread_mutex_lock(&threadlock);
-            // tidlocalindex++;
             // pthread_mutex_unlock(&threadlock);
 
             //strcpy(file_dictionary[fileindex++],thread_path[path_index]);
@@ -544,11 +615,22 @@ void ifPathCorrect(char* path){
 
 int main(int c, char *v[]){
 
+    //final_sorted = (*)malloc(2048*5050*sizeof(SortArray));
+    int i;
+    i = 0;
+    for(;i<50000;i++){
+        final_sorted[i]= malloc(sizeof (char*) * 28);
+    }
 
     struct dirent *pDirent;
     DIR *pDir;
 
-    final_sorted = (SortArray*)malloc(2048*5050*sizeof(SortArray));
+    //headerArray = (char**)malloc(28 * sizeof(char*));
+
+    int count_m1 = 0;
+    for(; count_m1 < 28; count_m1++){
+        headerArray[count_m1] = malloc(90*sizeof(char));
+    }
 
     // path for output sorted csv
     char output_path[500] = ".";
@@ -571,7 +653,7 @@ int main(int c, char *v[]){
     }
 
     if (c == 3){
-        sort_value_type = v[2];
+      sort_value_type=v[2];
     }   // 2 parameters: -c -d | -c -o | -d -c | -o -c
     else if (c == 5){
         if (strstr(v[4], cwd) != NULL){
@@ -599,6 +681,7 @@ int main(int c, char *v[]){
             }
         // -d -c
         } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0) {
+            sort_value_type = v[4];
             if (strstr(v[2], cwd) != NULL){
                 memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
                 abs_path[strlen(v[2]) - cwd_len] = '\0';
@@ -608,6 +691,7 @@ int main(int c, char *v[]){
             }
         // -o -c
         } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0){
+            sort_value_type = v[4];
             if (strstr(v[2], cwd) != NULL){
                 memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
                 abs_path[strlen(v[2]) - cwd_len] = '\0';
@@ -625,6 +709,7 @@ int main(int c, char *v[]){
         ifPathCorrect(v[6]);
         // -c -d -o
         if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-o") == 0){
+            sort_value_type = v[2];
             if (strstr(v[4], cwd) != NULL){
                 memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
                 abs_path[strlen(v[4]) - cwd_len] = '\0';
@@ -642,6 +727,7 @@ int main(int c, char *v[]){
             }
         // -c -o -d
         } else if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-d") == 0){
+            sort_value_type = v[2];
             if (strstr(v[4], cwd) != NULL){
                 memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
                 abs_path[strlen(v[4]) - cwd_len] = '\0';
@@ -659,6 +745,7 @@ int main(int c, char *v[]){
             }
         // -o -c -d
         } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-d") == 0){
+            sort_value_type = v[4];
             if (strstr(v[2], cwd) != NULL){
                 memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
                 abs_path[strlen(v[2]) - cwd_len] = '\0';
@@ -676,6 +763,7 @@ int main(int c, char *v[]){
             }
         // -o -d -c
         } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-c") == 0){
+            sort_value_type = v[6];
             if (strstr(v[2], cwd) != NULL){
                 memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
                 abs_path[strlen(v[2]) - cwd_len] = '\0';
@@ -693,6 +781,7 @@ int main(int c, char *v[]){
             }
         // -d -c -o
         } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-o") == 0){
+            sort_value_type = v[4];
             if (strstr(v[6], cwd) != NULL){
                 memcpy(abs_path, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
                 abs_path[strlen(v[6]) - cwd_len] = '\0';
@@ -710,6 +799,7 @@ int main(int c, char *v[]){
             }
         // -d -o -c
         } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-c") == 0){
+            sort_value_type = v[6];
             if (strstr(v[4], cwd) != NULL){
                 memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
                 abs_path[strlen(v[4]) - cwd_len] = '\0';
@@ -738,23 +828,56 @@ int main(int c, char *v[]){
     recur((void *)tmpInitDir);
 
 
-    printf("CWD: %s\n", cwd);
-    //pthread_mutex_lock(&count_lock);
-    int i=0;
-    int thread_count = 0;
-    pthread_t tid_sort[10000];
+    FILE *fp;
+    char *cat_tmp = malloc(sizeof(char)*200);
+    strcpy(cat_tmp, "/AllFiles-sorted-<");
+    strcat(strcat(cat_tmp, sort_value_type),">.csv");
+    strcat(output_path, cat_tmp);
+    //printf("OUTPUT: %s\n", output_path);
+
+    fp=fopen(output_path,"w+");
+
+    // print header
+    int count1 = 0;
+
+    int output_count = 0;
+
+    for (; count1 < dataCol; count1++){
+        if (count1 == dataCol-1){
+            fprintf(fp, "%s\n", headerArray[count1]);
+            break;
+        }
+        fprintf(fp, "%s,", headerArray[count1]);
+    }
+
+    count1 = 0;
+    int count2 = 0;
+    for(; count2 < count_row; count2++){
+        for (; count1 < dataCol; count1++){
+            // printf("%s",final_sorted[count2][count1]);
+            fprintf(fp,"%s",final_sorted[count2][count1]);
+        }
+        count1 = 0;
+    }
+
+
+
+
+
+    pthread_mutex_lock(&count_lock);
+    i=0;
     for(; i <fileindex;i++){
       char wut[1024];
       printf("main : %s index %d\n",file_dictionary[i],i );
       strcpy(wut,"/");
       strcat(wut,file_dictionary[i]);
-      
-        
+
+
             //pthread_create(&tid_sort[thread_count], NULL, (void*)&sort_one_file, (void*)file_dictionary[thread_count]);
             sort_one_file(file_dictionary[i]);
-        
+
     }
-    
+
     //pthread_mutex_unlock(&count_lock);
 
     // pthread_mutex_lock(&sort_lock);
@@ -765,11 +888,12 @@ int main(int c, char *v[]){
 
     // }
     // pthread_mutex_unlock(&sort_lock);
-    
+
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
     pthread_mutex_destroy(&csv_lock);
     pthread_mutex_destroy(&count_lock);
-    //free(tmpInitDir);
+    free(tmpInitDir);
+    fclose(fp);
     return 0;
 }
