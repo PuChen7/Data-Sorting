@@ -39,13 +39,19 @@ int main(int argc , char *argv[])
     listen(socket_desc , 3);
 
     //Accept and incoming connection
-    puts("Waiting for incoming connections...");
+    printf("Received connections from: ");
     c = sizeof(struct sockaddr_in);
     while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        puts("Connection accepted");
+        //puts("Connection accepted");
+        char clntName[INET_ADDRSTRLEN];
 
-        //Reply to the client
+        if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
+           printf("%s,",clntName);
+        } else {
+           printf("Unable to get address\n"); // i just fixed this to printf .. i had it as print before
+        }        //Reply to the client
+
         message = "Hello Client , I have received your connection. And now I will assign a handler for you\n";
         write(new_socket , message , strlen(message));
 
@@ -62,7 +68,7 @@ int main(int argc , char *argv[])
 
         //Now join the thread , so that we dont terminate before the thread
         pthread_join( sniffer_thread , NULL);
-        puts("Handler assigned");
+        //puts("Handler assigned");
 
     }
 
@@ -103,7 +109,7 @@ void *connection_handler(void *socket_desc)
 
     if(read_size == 0)
     {
-        puts("Client disconnected");
+        //puts("Client disconnected");
         fflush(stdout);
     }
     else if(read_size == -1)
