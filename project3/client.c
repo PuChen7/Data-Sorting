@@ -53,24 +53,24 @@ int main(int argc , char *argv[])
     //keep communicating with server
 
 
-      scanf("%s" , message);
-      //Send some data
-      if(send(sock , message , strlen(message) , 0) < 0)
-      {
-          puts("Send failed");
-          return 1;
-      }
+    scanf("%s" , message);
+    //Send some data
+    if(send(sock , message , strlen(message) , 0) < 0)
+    {
+        puts("Send failed");
+        return 1;
+    }
 
-      server_reply = malloc(2000);
+    server_reply = malloc(2000);
 
-      if(recv(sock , server_reply , 2000 , 0) < 0)
-      {
-          puts("recv failed");
-          return 2;
-      }
-      puts("Server replies :");
-      puts(server_reply);
-      free(server_reply);
+    if(recv(sock , server_reply , 2000 , 0) < 0)
+    {
+        puts("recv failed");
+        return 2;
+    }
+    puts("Server replies :");
+    puts(server_reply);
+    free(server_reply);
 
 
     close(sock);
