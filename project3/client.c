@@ -6,7 +6,7 @@
 #include<sys/socket.h>    //socket
 #include<arpa/inet.h> //inet_addr
 //new
-
+#include <netdb.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <signal.h>
@@ -209,9 +209,21 @@ void ifPathCorrect(char* path){
     }
 }
 
+
+//correct parameter order : -c -h -p -d -o (first 3 are required)
 int main(int c, char *v[]){
+    struct in_addr addr;
+    struct hostent *hostp;
     struct sockaddr_in server;
     char *server_reply;
+
+    //Get Host name , either string or address
+    if (inet_aton(v[4], &addr) != 0)
+    hostp = gethostbyaddr((const char *)&addr, sizeof(addr), AF_INET);
+    else
+    hostp = gethostbyname(v[4]);
+
+
     //Create socket
     sock = socket(AF_INET , SOCK_STREAM , 0);
     if (sock == -1)
@@ -220,9 +232,11 @@ int main(int c, char *v[]){
     }
     puts("Socket created");
 
-    server.sin_addr.s_addr = inet_addr("127.0.0.1");//default to localhost
+    char **pp;
+    pp = hostp->h_addr_list;
+    server.sin_addr.s_addr = ((struct in_addr *)*pp)->s_addr;//default to localhost
     server.sin_family = AF_INET;
-    server.sin_port = htons( atoi(v[8]) );//-c -d -o -p portnumber
+    server.sin_port = htons( atoi(v[6]) );
 
     //Connect to remote server
     if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
@@ -268,182 +282,183 @@ int main(int c, char *v[]){
     int isAbs = 1;
 
 
-    // arguments less than 3, error
-    if (c < 3){
-        printf("Error: insufficient parameters!\n");
-        exit(0);
-    }
-
-    if (c == 3){
-      sort_value_type=v[2];
-    }   // 2 parameters: -c -d | -c -o | -d -c | -o -c
-    else if (c == 5){
-        if (strstr(v[4], cwd) != NULL){
-            memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
-            abs_path[strlen(v[4]) - cwd_len] = '\0';
-            isAbs = 0;
-        }
-        ifPathCorrect(v[4]);
-
-        // -c -d
-        if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-d") == 0){
-            sort_value_type = v[2];
-            if (isAbs == 0){
-                strcpy(initial_dir, abs_path);
-            } else {
-                strcpy(initial_dir, v[4]);
-            }
-        // -c -o
-        } else if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-o") == 0){
-            sort_value_type = v[2];
-            if (isAbs == 0){
-                strcpy(output_path, abs_path);
-            } else {
-                strcpy(output_path, v[4]);
-            }
-        // -d -c
-        } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0) {
-            sort_value_type = v[4];
-            if (strstr(v[2], cwd) != NULL){
-                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
-                abs_path[strlen(v[2]) - cwd_len] = '\0';
-                strcpy(initial_dir, abs_path);
-            } else {
-                strcpy(initial_dir, v[2]);
-            }
-        // -o -c
-        } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0){
-            sort_value_type = v[4];
-            if (strstr(v[2], cwd) != NULL){
-                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
-                abs_path[strlen(v[2]) - cwd_len] = '\0';
-                strcpy(output_path, abs_path);
-            } else {
-                strcpy(output_path, v[2]);
-            }
-        } else {
-            printf("Error: incorrect parameter!\n");
-            exit(0);
-        }
-    // -c -d -o | -c -o -d | -o -c -d | -o -d -c | -d -c -o | -d -o -c
-    } else if (c == 7){
-        ifPathCorrect(v[4]);
-        ifPathCorrect(v[6]);
-        // -c -d -o
-        if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-o") == 0){
-            sort_value_type = v[2];
-            if (strstr(v[4], cwd) != NULL){
-                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
-                abs_path[strlen(v[4]) - cwd_len] = '\0';
-                strcpy(initial_dir, abs_path);
-            } else {
-                strcpy(initial_dir, v[4]);
-            }
-            if (strstr(v[6], cwd) != NULL){
-                char abs_path2[1024];
-                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
-                abs_path2[strlen(v[6]) - cwd_len] = '\0';
-                strcpy(output_path, abs_path2);
-            } else {
-                strcpy(output_path, v[6]);
-            }
-        // -c -o -d
-        } else if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-d") == 0){
-            sort_value_type = v[2];
-            if (strstr(v[4], cwd) != NULL){
-                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
-                abs_path[strlen(v[4]) - cwd_len] = '\0';
-                strcpy(output_path, abs_path);
-            } else {
-                strcpy(output_path, v[4]);
-            }
-            if (strstr(v[6], cwd) != NULL){
-                char abs_path2[1024];
-                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
-                abs_path2[strlen(v[6]) - cwd_len] = '\0';
-                strcpy(initial_dir, abs_path2);
-            } else {
-                strcpy(initial_dir, v[6]);
-            }
-        // -o -c -d
-        } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-d") == 0){
-            sort_value_type = v[4];
-            if (strstr(v[2], cwd) != NULL){
-                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
-                abs_path[strlen(v[2]) - cwd_len] = '\0';
-                strcpy(output_path, abs_path);
-            } else {
-                strcpy(output_path, v[2]);
-            }
-            if (strstr(v[6], cwd) != NULL){
-                char abs_path2[1024];
-                memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
-                abs_path2[strlen(v[6]) - cwd_len] = '\0';
-                strcpy(initial_dir, abs_path2);
-            } else {
-                strcpy(initial_dir, v[6]);
-            }
-        // -o -d -c
-        } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-c") == 0){
-            sort_value_type = v[6];
-            if (strstr(v[2], cwd) != NULL){
-                memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
-                abs_path[strlen(v[2]) - cwd_len] = '\0';
-                strcpy(output_path, abs_path);
-            } else {
-                strcpy(output_path, v[2]);
-            }
-            if (strstr(v[4], cwd) != NULL){
-                char abs_path2[1024];
-                memcpy(abs_path2, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
-                abs_path2[strlen(v[4]) - cwd_len] = '\0';
-                strcpy(initial_dir, abs_path2);
-            } else {
-                strcpy(initial_dir, v[4]);
-            }
-        // -d -c -o
-        } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-o") == 0){
-            sort_value_type = v[4];
-            if (strstr(v[6], cwd) != NULL){
-                memcpy(abs_path, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
-                abs_path[strlen(v[6]) - cwd_len] = '\0';
-                strcpy(output_path, abs_path);
-            } else {
-                strcpy(output_path, v[6]);
-            }
-            if (strstr(v[2], cwd) != NULL){
-                char abs_path2[1024];
-                memcpy(abs_path2, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
-                abs_path2[strlen(v[2]) - cwd_len] = '\0';
-                strcpy(initial_dir, abs_path2);
-            } else {
-                strcpy(initial_dir, v[2]);
-            }
-        // -d -o -c
-        } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-c") == 0){
-            sort_value_type = v[6];
-            if (strstr(v[4], cwd) != NULL){
-                memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
-                abs_path[strlen(v[4]) - cwd_len] = '\0';
-                strcpy(output_path, abs_path);
-            } else {
-                strcpy(output_path, v[4]);
-            }
-            if (strstr(v[2], cwd) != NULL){
-                char abs_path2[1024];
-                memcpy(abs_path2, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
-                abs_path2[strlen(v[2]) - cwd_len] = '\0';
-                strcpy(initial_dir, abs_path2);
-            } else {
-                strcpy(initial_dir, v[2]);
-            }
-        }
-    }
+    // // arguments less than 3, error
+    // if (c < 3){
+    //     printf("Error: insufficient parameters!\n");
+    //     exit(0);
+    // }
+    //
+    // if (c == 3){
+    //   sort_value_type=v[2];
+    // }   // 2 parameters: -c -d | -c -o | -d -c | -o -c
+    // else if (c == 5){
+    //     if (strstr(v[4], cwd) != NULL){
+    //         memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+    //         abs_path[strlen(v[4]) - cwd_len] = '\0';
+    //         isAbs = 0;
+    //     }
+    //     ifPathCorrect(v[4]);
+    //
+    //     // -c -d
+    //     if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-d") == 0){
+    //         sort_value_type = v[2];
+    //         if (isAbs == 0){
+    //             strcpy(initial_dir, abs_path);
+    //         } else {
+    //             strcpy(initial_dir, v[4]);
+    //         }
+    //     // -c -o
+    //     } else if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-o") == 0){
+    //         sort_value_type = v[2];
+    //         if (isAbs == 0){
+    //             strcpy(output_path, abs_path);
+    //         } else {
+    //             strcpy(output_path, v[4]);
+    //         }
+    //     // -d -c
+    //     } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0) {
+    //         sort_value_type = v[4];
+    //         if (strstr(v[2], cwd) != NULL){
+    //             memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+    //             abs_path[strlen(v[2]) - cwd_len] = '\0';
+    //             strcpy(initial_dir, abs_path);
+    //         } else {
+    //             strcpy(initial_dir, v[2]);
+    //         }
+    //     // -o -c
+    //     } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0){
+    //         sort_value_type = v[4];
+    //         if (strstr(v[2], cwd) != NULL){
+    //             memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+    //             abs_path[strlen(v[2]) - cwd_len] = '\0';
+    //             strcpy(output_path, abs_path);
+    //         } else {
+    //             strcpy(output_path, v[2]);
+    //         }
+    //     } else {
+    //         printf("Error: incorrect parameter!\n");
+    //         exit(0);
+    //     }
+    // // -c -d -o | -c -o -d | -o -c -d | -o -d -c | -d -c -o | -d -o -c
+    // } else if (c == 7){
+    //     ifPathCorrect(v[4]);
+    //     ifPathCorrect(v[6]);
+    //     // -c -d -o
+    //     if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-o") == 0){
+    //         sort_value_type = v[2];
+    //         if (strstr(v[4], cwd) != NULL){
+    //             memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+    //             abs_path[strlen(v[4]) - cwd_len] = '\0';
+    //             strcpy(initial_dir, abs_path);
+    //         } else {
+    //             strcpy(initial_dir, v[4]);
+    //         }
+    //         if (strstr(v[6], cwd) != NULL){
+    //             char abs_path2[1024];
+    //             memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+    //             abs_path2[strlen(v[6]) - cwd_len] = '\0';
+    //             strcpy(output_path, abs_path2);
+    //         } else {
+    //             strcpy(output_path, v[6]);
+    //         }
+    //     // -c -o -d
+    //     } else if (strcmp(v[1], "-c") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-d") == 0){
+    //         sort_value_type = v[2];
+    //         if (strstr(v[4], cwd) != NULL){
+    //             memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+    //             abs_path[strlen(v[4]) - cwd_len] = '\0';
+    //             strcpy(output_path, abs_path);
+    //         } else {
+    //             strcpy(output_path, v[4]);
+    //         }
+    //         if (strstr(v[6], cwd) != NULL){
+    //             char abs_path2[1024];
+    //             memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+    //             abs_path2[strlen(v[6]) - cwd_len] = '\0';
+    //             strcpy(initial_dir, abs_path2);
+    //         } else {
+    //             strcpy(initial_dir, v[6]);
+    //         }
+    //     // -o -c -d
+    //     } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-d") == 0){
+    //         sort_value_type = v[4];
+    //         if (strstr(v[2], cwd) != NULL){
+    //             memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+    //             abs_path[strlen(v[2]) - cwd_len] = '\0';
+    //             strcpy(output_path, abs_path);
+    //         } else {
+    //             strcpy(output_path, v[2]);
+    //         }
+    //         if (strstr(v[6], cwd) != NULL){
+    //             char abs_path2[1024];
+    //             memcpy(abs_path2, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+    //             abs_path2[strlen(v[6]) - cwd_len] = '\0';
+    //             strcpy(initial_dir, abs_path2);
+    //         } else {
+    //             strcpy(initial_dir, v[6]);
+    //         }
+    //     // -o -d -c
+    //     } else if (strcmp(v[1], "-o") == 0 && strcmp(v[3], "-d") == 0 && strcmp(v[5], "-c") == 0){
+    //         sort_value_type = v[6];
+    //         if (strstr(v[2], cwd) != NULL){
+    //             memcpy(abs_path, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+    //             abs_path[strlen(v[2]) - cwd_len] = '\0';
+    //             strcpy(output_path, abs_path);
+    //         } else {
+    //             strcpy(output_path, v[2]);
+    //         }
+    //         if (strstr(v[4], cwd) != NULL){
+    //             char abs_path2[1024];
+    //             memcpy(abs_path2, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+    //             abs_path2[strlen(v[4]) - cwd_len] = '\0';
+    //             strcpy(initial_dir, abs_path2);
+    //         } else {
+    //             strcpy(initial_dir, v[4]);
+    //         }
+    //     // -d -c -o
+    //     } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-c") == 0 && strcmp(v[5], "-o") == 0){
+    //         sort_value_type = v[4];
+    //         if (strstr(v[6], cwd) != NULL){
+    //             memcpy(abs_path, &v[6][cwd_len+1], strlen(v[6])-cwd_len);
+    //             abs_path[strlen(v[6]) - cwd_len] = '\0';
+    //             strcpy(output_path, abs_path);
+    //         } else {
+    //             strcpy(output_path, v[6]);
+    //         }
+    //         if (strstr(v[2], cwd) != NULL){
+    //             char abs_path2[1024];
+    //             memcpy(abs_path2, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+    //             abs_path2[strlen(v[2]) - cwd_len] = '\0';
+    //             strcpy(initial_dir, abs_path2);
+    //         } else {
+    //             strcpy(initial_dir, v[2]);
+    //         }
+    //     // -d -o -c
+    //     } else if (strcmp(v[1], "-d") == 0 && strcmp(v[3], "-o") == 0 && strcmp(v[5], "-c") == 0){
+    //         sort_value_type = v[6];
+    //         if (strstr(v[4], cwd) != NULL){
+    //             memcpy(abs_path, &v[4][cwd_len+1], strlen(v[4])-cwd_len);
+    //             abs_path[strlen(v[4]) - cwd_len] = '\0';
+    //             strcpy(output_path, abs_path);
+    //         } else {
+    //             strcpy(output_path, v[4]);
+    //         }
+    //         if (strstr(v[2], cwd) != NULL){
+    //             char abs_path2[1024];
+    //             memcpy(abs_path2, &v[2][cwd_len+1], strlen(v[2])-cwd_len);
+    //             abs_path2[strlen(v[2]) - cwd_len] = '\0';
+    //             strcpy(initial_dir, abs_path2);
+    //         } else {
+    //             strcpy(initial_dir, v[2]);
+    //         }
+    //     }
+    // }
     //暂时comment 掉
     // else {
     //     printf("Error: insufficient parameter!\n");
     //     exit(0);
     // }
+
 
     printf("Initial TID: %ld\n",pthread_self());
     printf("INITIAL: %s\n", initial_dir);
@@ -459,7 +474,6 @@ int main(int c, char *v[]){
     pthread_mutex_destroy(&csv_lock);
     pthread_mutex_destroy(&count_lock);
     free(tmpInitDir);
-    //fclose(fp);
     close(sock);
     return 0;
 }
