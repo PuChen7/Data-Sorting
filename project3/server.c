@@ -111,8 +111,13 @@ void *connection_handler(void *socket_desc)
         char *p = strchr(sendback_message, '\n');
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
-        printf("%s",sendback_message);
-
+        //printf("%s",sendback_message);
+        if(strstr(sendback_message,"sort request\n")!=NULL){
+          printf("\nsort request\n");
+        }
+        if(strstr(sendback_message,"dump request\n")!=NULL){
+          printf("\ndump request\n");
+        }
         write(sock , sendback_message , strlen(sendback_message));
     }
 

@@ -84,6 +84,7 @@ void *send_request(char* send_file_path)
     char* line=malloc(1024);    // temp array for holding csv file lines.
     char buf[1024];
     char* receive[1024];
+    int row = 0;
     while (fgets(line, 1024, input_file)){
         //printf("ready to sent strlen %d \n",strlen(line));
         if(write(sock , line , strlen(line) ) < 0)
@@ -102,16 +103,19 @@ void *send_request(char* send_file_path)
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
 
-        puts("Server replies :");
-        printf("%s",receive);
+        // puts("Server replies :");
+        // printf("%s",receive);
         free(line);
         line=malloc(1024);
     }
-
+    write(sock , "sort request\n" , strlen("sort request\n"));
     fclose(input_file);
     free(tmp_path);
     pthread_mutex_unlock(&sort_lock);
-
+    printf("sent %d\n",sentCounter);
+    if(sentCounter==8){
+      write(sock , "dump request\n" , strlen("dump request\n"));
+    }
     return NULL;
 }
 
@@ -478,6 +482,7 @@ int main(int c, char *v[]){
 
 
     printf("sent %d files\n",sentCounter);
+
 
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
