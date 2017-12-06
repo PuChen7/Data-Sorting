@@ -81,27 +81,37 @@ void *send_request(char* send_file_path)
     }
     sentCounter++;
 
-    char line[1024];    // temp array for holding csv file lines.
+    char* line=malloc(1024);    // temp array for holding csv file lines.
+    char buf[1024];
+    char* receive[1024];
     while (fgets(line, 1024, input_file)){
-        if(send(sock , line , strlen(line) , 0) < 0)
+        //printf("ready to sent strlen %d \n",strlen(line));
+        if(write(sock , line , strlen(line) ) < 0)
         {
             puts("Send failed");
             return 1;
         }
-
-        if(recv(sock , line , 2000, 0) < 0)
+        if(read(sock , buf , 1024) < 0)
         {
             puts("recv failed");
             return 2;
         }
 
+        strcpy(receive,buf);
+        char *p = strchr(receive, '\n');
+        if (!p) /* deal with error: / not present" */;
+        *(p+1) = 0;
+
         puts("Server replies :");
-        puts(line);
+        printf("%s",receive);
+        free(line);
+        line=malloc(1024);
     }
 
-    pthread_mutex_unlock(&sort_lock);
     fclose(input_file);
     free(tmp_path);
+    pthread_mutex_unlock(&sort_lock);
+
     return NULL;
 }
 

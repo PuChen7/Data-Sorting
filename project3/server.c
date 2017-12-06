@@ -8,6 +8,7 @@
 #include<pthread.h> //for threading , link with lpthread
 
 void *connection_handler(void *);
+pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc , char *argv[])
 {
@@ -77,7 +78,7 @@ int main(int argc , char *argv[])
         perror("accept failed");
         return 1;
     }
-
+    pthread_mutex_destroy(&csv_lock);
     return 0;
 }
 
@@ -89,7 +90,6 @@ void *connection_handler(void *socket_desc)
     //Get the socket descriptor
     int sock = *(int*)socket_desc;
     int read_size;
-    char *client_message = NULL;
 
     //Send some messages to the client
     //message = "Greetings! I am your connection handler\n";
@@ -99,12 +99,21 @@ void *connection_handler(void *socket_desc)
     // write(sock , message , strlen(message));
 
     //Receive a message from client
-    while( (read_size = recv(sock , client_message=(char*)malloc(2000) , 2000 , 0)) > 0 )
+    char client_message[1024];
+    char sendback_message[1024];
+    // pthread_mutex_lock(&csv_lock);
+    while( (read_size = read(sock , client_message , 1024 )) > 0 )
     {
         //Send the message back to client
-        //printf("%s    ",client_message);
-        write(sock , client_message , strlen(client_message));
-        free(client_message);
+        //printf("%d\n",strlen(client_message));
+        //printf("%s",client_message);
+        strcpy(sendback_message,client_message);
+        char *p = strchr(sendback_message, '\n');
+        if (!p) /* deal with error: / not present" */;
+        *(p+1) = 0;
+        printf("%s",sendback_message);
+
+        write(sock , sendback_message , strlen(sendback_message));
     }
 
     if(read_size == 0)
@@ -119,6 +128,7 @@ void *connection_handler(void *socket_desc)
 
     //Free the socket pointer
     free(socket_desc);
+    // pthread_mutex_unlock(&csv_lock);
 
     return 0;
 }
