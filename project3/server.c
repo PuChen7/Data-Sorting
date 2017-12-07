@@ -103,15 +103,10 @@ void *connection_handler(void *socket_desc)
     while( (read_size = read(sock , client_message , 1024 )) > 0 )
     {
         //Send the message back to client
-        //printf("%d\n",strlen(client_message));
-        //printf("%s",client_message);
-
         strcpy(sendback_message,client_message);
         char *p = strchr(sendback_message, '\n');
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
-
-        //printf("%s",sendback_message);
 
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
           printf("\nsort request\n");
