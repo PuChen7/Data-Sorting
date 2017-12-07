@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include "sorter.h"
 #define EMPTY_STRING ""
+#define SORT_REQUEST "sort_request\n"
+#define DUMP_REQUEST "dump_request\n"
 
 /* Function for locating the range of the first letter of the string
    There are 4 ranges based on ASCII values.

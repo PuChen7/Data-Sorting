@@ -105,16 +105,16 @@ void *send_request(char* send_file_path)
 
         // puts("Server replies :");
         // printf("%s",receive);
+
         free(line);
         line=malloc(1024);
     }
-    write(sock , "sort request\n" , strlen("sort request\n"));
+    write(sock , SORT_REQUEST , strlen(SORT_REQUEST));
     fclose(input_file);
     free(tmp_path);
     pthread_mutex_unlock(&sort_lock);
-    printf("sent %d\n",sentCounter);
     if(sentCounter==8){
-      write(sock , "dump request\n" , strlen("dump request\n"));
+      write(sock , DUMP_REQUEST , strlen(DUMP_REQUEST));
     }
     return NULL;
 }
