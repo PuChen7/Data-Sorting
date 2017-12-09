@@ -110,8 +110,8 @@ void *send_request(char* send_file_path)
         free(line);
         line=malloc(1024);
     }
-    char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type));
-    sprintf(infoString,"%s|%s",sort_value_type,SORT_REQUEST);
+    char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type)+sizeof(int));
+    sprintf(infoString,"%d-%s|%s",row,sort_value_type,SORT_REQUEST);
     write(sock , infoString , strlen(infoString));
     fclose(input_file);
     free(tmp_path);

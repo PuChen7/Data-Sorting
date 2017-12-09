@@ -109,12 +109,16 @@ void *connection_handler(void *socket_desc)
         *(p+1) = 0;
 
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
-          printf("\nreceiving : %s,read as : sort request\n",sendback_message);
           char* copy = strdup(sendback_message);
           char *breakdown = strchr(copy, '|');
           if (!breakdown) /* deal with error: / not present" */;
           *(breakdown) = 0;
-          printf("search value type :%s\n",copy);
+          breakdown = strchr(copy, '-');
+          char* sort_type = strdup(breakdown+1);
+          if (!breakdown) /* deal with error: / not present" */;
+          *(breakdown) = 0;
+          int dataRow = atoi(copy);
+          printf("\nsort_request with search value type :%s,dataRow:%d\n",sort_type,dataRow);
           free(copy);
         }
         if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
