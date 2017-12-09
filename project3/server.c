@@ -13,7 +13,6 @@ int main(int argc , char *argv[])
 {
     int socket_desc , new_socket , c , *new_sock;
     struct sockaddr_in server , client;
-    char *message;
 
     //Create socket
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
@@ -52,9 +51,6 @@ int main(int argc , char *argv[])
            printf("Unable to get address\n"); // i just fixed this to printf .. i had it as print before
         }        //Reply to the client
 
-        message = "Hello Client , I have received your connection. And now I will assign a handler for you\n";
-        write(new_socket , message , strlen(message));
-
         //sleep(1);
         pthread_t sniffer_thread;
         new_sock = malloc(1);
@@ -89,13 +85,6 @@ void *connection_handler(void *socket_desc)
     //Get the socket descriptor
     int sock = *(int*)socket_desc;
     int read_size;
-
-    //Send some messages to the client
-    //message = "Greetings! I am your connection handler\n";
-
-    // //message = "Now type something and i shall repeat what you type \n";
-    // strcpy(message,"");
-    // write(sock , message , strlen(message));
 
     //Receive a message from client
     char client_message[1024];
