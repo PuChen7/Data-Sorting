@@ -87,6 +87,7 @@ void *send_request(char* send_file_path)
     int row = 0;
     while (fgets(line, 1024, input_file)){
         //printf("ready to sent strlen %d \n",strlen(line));
+        row++;
         if(write(sock , line , strlen(line) ) < 0)
         {
             puts("Send failed");
@@ -109,10 +110,14 @@ void *send_request(char* send_file_path)
         free(line);
         line=malloc(1024);
     }
-    write(sock , SORT_REQUEST , strlen(SORT_REQUEST));
+    char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type));
+    sprintf(infoString,"%s|%s",sort_value_type,SORT_REQUEST);
+    write(sock , infoString , strlen(infoString));
     fclose(input_file);
     free(tmp_path);
     pthread_mutex_unlock(&sort_lock);
+    free(infoString);
+
     if(sentCounter==8){
       write(sock , DUMP_REQUEST , strlen(DUMP_REQUEST));
     }
@@ -473,7 +478,7 @@ int main(int c, char *v[]){
     //     exit(0);
     // }
 
-
+    sort_value_type=v[2];
     printf("Initial TID: %ld\n",pthread_self());
     printf("INITIAL: %s\n", initial_dir);
     printf("OUTPUT: %s\n", output_path);
