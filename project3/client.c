@@ -219,7 +219,7 @@ void *recur(void *arg_path){
 }
 
 void ifPathCorrect(char* path){
-    if (strstr(path, "//") != NULL){
+    if (strstr(path, "//") != NULL ||(strlen(path)==1&&strstr(path, "/") != NULL) ){
         printf("Error: incorrect path!\n");
         exit(0);
     }
@@ -232,6 +232,58 @@ int main(int c, char *v[]){
         printf("Error: insufficient parameters!\n");
         exit(0);
     }
+    struct dirent *pDirent;
+    DIR *pDir;
+
+    // path for output sorted csv
+    char output_path[500] = ".";
+    // path for starting dir
+    char initial_dir[500] = ".";
+
+    char abs_path[1024];
+
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    int cwd_len = strlen(cwd);
+
+    int isAbs = 1;
+
+    if(c == 11){//... -d
+          ifPathCorrect(v[10]);
+          if (strstr(v[10], cwd) != NULL){
+              memcpy(abs_path, &v[10][cwd_len+1], strlen(v[10])-cwd_len);
+              abs_path[strlen(v[10]) - cwd_len] = '\0';
+              isAbs = 0;
+          }
+          if (isAbs == 0){
+              strcpy(initial_dir, abs_path);
+          } else {
+              strcpy(initial_dir, v[10]);
+          }
+    }
+    else if(c == 13){//... -d -o
+          ifPathCorrect(v[10]);
+          ifPathCorrect(v[12]);
+          if (strstr(v[10], cwd) != NULL){
+              char abs_path2[1024];
+              memcpy(abs_path2, &v[10][cwd_len+1], strlen(v[10])-cwd_len);
+              abs_path2[strlen(v[10]) - cwd_len] = '\0';
+              strcpy(initial_dir, abs_path2);
+          } else {
+              strcpy(initial_dir, v[10]);
+          }
+          if (strstr(v[12], cwd) != NULL){
+              memcpy(abs_path, &v[12][cwd_len+1], strlen(v[12])-cwd_len);
+              abs_path[strlen(v[12]) - cwd_len] = '\0';
+              strcpy(output_path, abs_path);
+          } else {
+              strcpy(output_path, v[12]);
+          }
+    }
+    //NOTE parameter printing
+    // printf("-d %s -o %s\n", initial_dir,output_path);
+
+
     //NOTE v2 : sort_type
     sort_value_type=v[2];
 
@@ -300,57 +352,9 @@ int main(int c, char *v[]){
     // puts("copysocket Connected\n");
 
 
-    struct dirent *pDirent;
-    DIR *pDir;
 
-    // path for output sorted csv
-    char output_path[500] = ".";
-    // path for starting dir
-    char initial_dir[500] = ".";
 
-    char abs_path[1024];
 
-    char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
-    int cwd_len = strlen(cwd);
-
-    int isAbs = 1;
-
-    if(c == 11){//... -d
-          ifPathCorrect(v[10]);
-          if (strstr(v[10], cwd) != NULL){
-              memcpy(abs_path, &v[10][cwd_len+1], strlen(v[10])-cwd_len);
-              abs_path[strlen(v[10]) - cwd_len] = '\0';
-              isAbs = 0;
-          }
-          if (isAbs == 0){
-              strcpy(initial_dir, abs_path);
-          } else {
-              strcpy(initial_dir, v[10]);
-          }
-    }else if(c == 13){//... -d -o
-          ifPathCorrect(v[10]);
-          ifPathCorrect(v[12]);
-          if (strstr(v[10], cwd) != NULL){
-              char abs_path2[1024];
-              memcpy(abs_path2, &v[10][cwd_len+1], strlen(v[10])-cwd_len);
-              abs_path2[strlen(v[10]) - cwd_len] = '\0';
-              strcpy(initial_dir, abs_path2);
-          } else {
-              strcpy(initial_dir, v[10]);
-          }
-          if (strstr(v[12], cwd) != NULL){
-              memcpy(abs_path, &v[12][cwd_len+1], strlen(v[12])-cwd_len);
-              abs_path[strlen(v[12]) - cwd_len] = '\0';
-              strcpy(output_path, abs_path);
-          } else {
-              strcpy(output_path, v[12]);
-          }
-    }
-
-    //NOTE parameter printing
-    // printf("-d %s -o %s\n", initial_dir,output_path);
-  
     char* tmpInitDir = strdup(initial_dir);
     recur((void *)tmpInitDir);
 
