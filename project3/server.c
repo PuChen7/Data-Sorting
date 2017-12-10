@@ -35,7 +35,7 @@ int main(int argc , char *argv[])
     puts("bind done");
 
     //Listen
-    listen(socket_desc , 3);
+    listen(socket_desc , 128);
 
     //Accept and incoming connection
     printf("Received connections from: ");
@@ -82,6 +82,7 @@ int main(int argc , char *argv[])
  * */
 void *connection_handler(void *socket_desc)
 {
+    printf("one socket come in\n" );
     //Get the socket descriptor
     int sock = *(int*)socket_desc;
     int read_size;
