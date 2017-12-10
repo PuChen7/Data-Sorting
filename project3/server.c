@@ -6,11 +6,25 @@
 #include<unistd.h>    //write
 #include "mergesort.c"
 #include<pthread.h> //for threading , link with lpthread
-
-pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
-
+#define SESSION_MSG "session_msg"
+pthread_mutex_t session_lock = PTHREAD_MUTEX_INITIALIZER;
+int currentsessionID=0;
+int sessionTotal=0;
+char** sessionDict=NULL;
+int isConnecting(char* ip){//1 for true, 0 for false
+    int i=0;
+    for(;i<sessionTotal;i++){
+      if(sessionDict[i]!=NULL){
+        if(strstr(sessionDict[i],ip)!=NULL){
+          return 1;
+        }
+      }
+    }
+    return 0;
+}
 int main(int argc , char *argv[])
 {
+    sessionDict = (char**)malloc(sizeof (char*) * 1000);
     int socket_desc , new_socket , c , *new_sock;
     struct sockaddr_in server , client;
 
@@ -46,7 +60,15 @@ int main(int argc , char *argv[])
         char clntName[INET_ADDRSTRLEN];
 
         if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
-           printf("%s,",clntName);
+           if(!isConnecting(clntName)){
+              printf("%s,",clntName);
+              char* sessionMSG = malloc(sizeof (int)+sizeof (SESSION_MSG));
+              sprintf(sessionMSG,"%d-%s",currentsessionID,SESSION_MSG);
+              write(new_socket,sessionMSG,strlen(sessionMSG));
+              sessionDict[currentsessionID++]=clntName;
+              sessionTotal = currentsessionID;
+              free(sessionMSG);
+            }
         } else {
            printf("Unable to get address\n"); // i just fixed this to printf .. i had it as print before
         }        //Reply to the client
@@ -64,7 +86,12 @@ int main(int argc , char *argv[])
 
         //Now join the thread , so that we dont terminate before the thread
         pthread_join( sniffer_thread , NULL);
-        //puts("Handler assigned");
+
+        pthread_mutex_lock(&session_lock);
+        sessionDict[currentsessionID--]=NULL;
+        sessionTotal--;
+        pthread_mutex_unlock(&session_lock);
+
 
     }
 
@@ -73,7 +100,7 @@ int main(int argc , char *argv[])
         perror("accept failed");
         return 1;
     }
-    pthread_mutex_destroy(&csv_lock);
+    pthread_mutex_destroy(&session_lock);
     return 0;
 }
 
@@ -82,7 +109,7 @@ int main(int argc , char *argv[])
  * */
 void *connection_handler(void *socket_desc)
 {
-    printf("one socket come in\n" );
+    // printf("one socket come in\n" );
     //Get the socket descriptor
     int sock = *(int*)socket_desc;
     int read_size;
@@ -107,9 +134,16 @@ void *connection_handler(void *socket_desc)
           char* sort_type = strdup(breakdown+1);
           if (!breakdown) /* deal with error: / not present" */;
           *(breakdown) = 0;
-          int dataRow = atoi(copy);
-          printf("\nsort_request with search value type :%s,dataRow:%d\n",sort_type,dataRow);
+          breakdown = strchr(copy, '_');
+          char* row_str = strdup(breakdown+1);
+          if (!breakdown) /* deal with error: / not present" */;
+          *(breakdown) = 0;
+          int dataRow = atoi(row_str);
+          int sessionID = atoi(copy);
+          printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
           free(copy);
+          free(sort_type);
+          free(row_str);
         }
         if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
           printf("\ndump request\n");
@@ -125,7 +159,7 @@ void *connection_handler(void *socket_desc)
     }
     else if(read_size == -1)
     {
-        perror("recv failed");
+        // perror("recv failed");
     }
 
     //Free the socket pointer

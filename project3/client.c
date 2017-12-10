@@ -28,7 +28,8 @@
 #define VALID_MOVIE_HEADER_NUMBER 28
 //socket global
 int sock;
-
+//session global
+int sessionID;
 //socket pool
 int poolSize=0;
 int* socketpool;
@@ -72,6 +73,8 @@ int available_socket(){
     writeVal=write(socketpool[start] , "" , strlen(""));
     if(writeVal>=0)return socketpool[start];
   }
+  //need tell the thread to sleep
+  //wake it up until there is available one
 }
 
 void *send_request(char* send_file_path)
@@ -88,8 +91,9 @@ void *send_request(char* send_file_path)
         return NULL;
     }
     pthread_mutex_lock(&sort_lock);
-    sentCounter++;
+
     int currentSocket = available_socket();
+    sentCounter++;
     char* line=malloc(1024);    // temp array for holding csv file lines.
     char buf[1024];
     char* receive[1024];
@@ -120,7 +124,7 @@ void *send_request(char* send_file_path)
         line=malloc(1024);
     }
     char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type)+sizeof(int));
-    sprintf(infoString,"%d-%s|%s",row,sort_value_type,SORT_REQUEST);
+    sprintf(infoString,"%d_%d-%s|%s",sessionID,row,sort_value_type,SORT_REQUEST);
     write(currentSocket, infoString , strlen(infoString));
     fclose(input_file);
     free(tmp_path);
@@ -322,6 +326,7 @@ int main(int c, char *v[]){
     poolSize=atoi(v[8]);//socket pool number
     socketpool=calloc(poolSize,sizeof *socketpool);
     int init=0;
+    char sessionMSG[20];
     for(;init<poolSize;init++){
       //Create socket
       socketpool[init] = socket(AF_INET , SOCK_STREAM , 0);
@@ -337,25 +342,12 @@ int main(int c, char *v[]){
           return 1;
       }
 
-      printf("%d th socket Connected\n",init);
-
+      if(init==0){
+        read(socketpool[init],sessionMSG,20);
+        *(strstr(sessionMSG,"-")+1)=0;
+        sessionID=atoi(sessionMSG);
+      }
     }
-
-    // //Create socket copy
-    // sock = socket(AF_INET , SOCK_STREAM , 0);
-    // if (sock == -1)
-    // {
-    //     printf("Could not create socket");
-    // }
-    // puts("copysocket Socket created");
-    //
-    // //Connect to remote server
-    // if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
-    // {
-    //     perror("copysocket connect failed. Error");
-    //     return 1;
-    // }
-    // puts("copysocket Connected\n");
 
     char* tmpInitDir = strdup(initial_dir);
     recur((void *)tmpInitDir);
@@ -372,7 +364,7 @@ int main(int c, char *v[]){
     init=0;
     for(;init<poolSize;init++){
       close(socketpool[init]);
-      printf("%dth th socket Disconnected\n",init);
+      //printf("%dth th socket Disconnected\n",init);
     }
     free(socketpool);
     //close(sock);
