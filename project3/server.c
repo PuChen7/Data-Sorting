@@ -108,7 +108,7 @@ int main(int argc , char *argv[])
 
     //Prepare the sockaddr_in structure
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_addr.s_addr = htons(INADDR_ANY);
     server.sin_port = htons( atoi(argv[2]) );
 
     //Bind
@@ -127,7 +127,7 @@ int main(int argc , char *argv[])
     c = sizeof(struct sockaddr_in);
     while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        //puts("Connection accepted");
+        puts("Connection accepted");
         char clntName[INET_ADDRSTRLEN];
 
         if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
@@ -202,26 +202,26 @@ void *connection_handler(void *socket_desc){
 
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
-
+        if(strstr(sendback_message,SORT_REQUEST)==NULL){
         // need to store header
         if (strstr(sendback_message, "director_name") && head_flag == 0){
-          char* headtmp = strdup(sendback_message);
-          char* head_tok = strtok_single(headtmp, ",");
-          int head_count = 0;
-          while (head_tok != NULL){
-            header[head_count] = strdup(head_tok);
+              char* headtmp = strdup(sendback_message);
+              char* head_tok = strtok_single(headtmp, ",");
+              int head_count = 0;
+              while (head_tok != NULL){
+                header[head_count] = strdup(head_tok);
 
-            head_count++;
-            head_tok = strtok_single(NULL, ",");
-          }
-          head_flag = 1;
-          write(sock , sendback_message , strlen(sendback_message));
-          continue;
-        } else if (strstr(sendback_message, "director_name") && head_flag == 1){
-          write(sock , sendback_message , strlen(sendback_message));
-          continue;
+                head_count++;
+                head_tok = strtok_single(NULL, ",");
+              }
+              head_flag = 1;
+              write(sock , sendback_message , strlen(sendback_message));
+              continue;
+            } else if (strstr(sendback_message, "director_name") && head_flag == 1){
+              write(sock , sendback_message , strlen(sendback_message));
+              continue;
+            }
         }
-
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
 
           char* copy = strdup(sendback_message);
@@ -431,8 +431,6 @@ void *connection_handler(void *socket_desc){
     }
 
 
-
-
     if(read_size == 0)
     {
         //puts("Client disconnected");
@@ -440,7 +438,7 @@ void *connection_handler(void *socket_desc){
     }
     else if(read_size == -1)
     {
-        // perror("recv failed");
+        perror("recv failed");
     }
 
     //Free the socket pointer
