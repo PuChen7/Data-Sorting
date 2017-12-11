@@ -295,14 +295,14 @@ void *connection_handler(void *socket_desc){
               int rowNumbers = 0;
               // store the column as an array
               SortArray *sort_array;
-              sort_array = (SortArray*) malloc(7000 * sizeof(SortArray));
+              sort_array = (SortArray*) malloc(dataRow-1 * sizeof(SortArray));
 
-              int sortArraycount=0;
               //a safer way to check if numeric
               int numericFlag = 0;
               int count = 0;
-              printf("datarow!!!!!!!: %d\n", dataRow);
+
               while (rowNumbers < dataRow-1){
+                  printf("datarow!!!!!!!: %s\n", partial[rowNumbers].str[sort_column]);
                   sort_array[rowNumbers].index = partial[rowNumbers].index;
                   sort_array[rowNumbers].str = strdup(partial[rowNumbers].str[sort_column]);
                   numericFlag += isNumeric(sort_array[rowNumbers].str);
@@ -313,6 +313,8 @@ void *connection_handler(void *socket_desc){
               // for (; r < dataRow-1; r++){
               //   printf("%s ----- %d\n", sort_array[r].str, sort_array[r].index);
               // }
+
+
               printf("ENDMN*******EDNENE\n");
 
 
@@ -329,10 +331,10 @@ void *connection_handler(void *socket_desc){
                   mergeSort(sort_array, 0, MAXROW-1,numeric);
               }
 
-              int u = 0;
-              for (; u < file_row[file_count]-1; u++){
-                printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
-              }
+              // int u = 0;
+              // for (; u < file_row[file_count]-1; u++){
+              //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
+              // }
 
 
               // free partial
@@ -439,7 +441,7 @@ void *connection_handler(void *socket_desc){
 
             /* store token into partial */
             partial[index_partial].str[token_count] = strdup(token);
-            //printf("%s\n", partial[index_partial].str[token_count]);
+            printf("%s\n", partial[index_partial].str[token_count]);
             token_count++;
             token = strtok_single(NULL, ",");
           }
