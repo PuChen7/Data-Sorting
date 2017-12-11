@@ -124,12 +124,10 @@ int main(int argc , char *argv[])
 
     //Accept and incoming connection
     printf("Received connections from: ");
-    c = sizeof(struct sockaddr_in);
+    c = sizeof(server);
     while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        puts("Connection accepted");
         char clntName[INET_ADDRSTRLEN];
-
         if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
            if(!isConnecting(clntName)){
               printf("%s,",clntName);
@@ -239,7 +237,7 @@ void *connection_handler(void *socket_desc){
           *(breakdown) = 0;
           int dataRow = atoi(row_str);
           int sessionID = atoi(copy);
-          printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
+          //printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
           // store the number of rows of the current file into array
 
           // update the total line numbers
@@ -357,7 +355,7 @@ void *connection_handler(void *socket_desc){
           }
           index_entire=0;
           num_of_rows=0;
-          printf("\ndump request\n");
+          //printf("\ndump request\n");
         } else {
 
             char* tmpstr = strdup(sendback_message);
