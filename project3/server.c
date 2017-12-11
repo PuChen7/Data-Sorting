@@ -249,27 +249,25 @@ void *connection_handler(void *socket_desc){
 
           num_of_files++;
 
+          free(copy);
+          free(sort_type);
+          free(row_str);
           if (strstr(sendback_message, "sort_request")){
             continue;
           }
           //printf("%s\n",sendback_message);
 
 
-          free(copy);
-          free(sort_type);
-          free(row_str);
+
         }
         if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
-
+          printf("free entire sub\n" );
           int icount = 0;
           int j = 0;
           for(;icount<80000;icount++){
-            for (; j < 28; j++){
-              free(entire[icount].str[j]);
-            }
-            j = 0;
+            free(entire[icount].str);
           }
-
+          printf("free entire\n" );
           free(entire);
 
           entire = malloc(80000 * sizeof(SortArray));
@@ -277,7 +275,8 @@ void *connection_handler(void *socket_desc){
           for(;i<80000;i++){
               entire[i].str = malloc(sizeof(char*)*28);
           }
-
+          index_entire=0;
+          num_of_rows=0;
           printf("\ndump request\n");
         } else {
 
