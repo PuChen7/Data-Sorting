@@ -177,8 +177,8 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
         k++;
     }
 
-    free(L);
-    free(R);
+    // free(L);
+    // free(R);
 
 }
 

@@ -180,6 +180,7 @@ int main(int argc , char *argv[])
         return 1;
     }
     pthread_mutex_destroy(&session_lock);
+    pthread_mutex_destroy(&sort_lock);
     return 0;
 }
 
@@ -201,7 +202,6 @@ void *connection_handler(void *socket_desc){
     int head_flag = 0;
 
     while( (read_size = read(sock , client_message , 1024 )) > 0 ){
-
         //Send the message back to client
         strcpy(sendback_message,client_message);
         char *p = strchr(sendback_message, '\n');
@@ -254,9 +254,9 @@ void *connection_handler(void *socket_desc){
           num_of_rows = num_of_rows + dataRow;
           num_of_files++;
 
-          free(copy);
-          free(sort_type);
-          free(row_str);
+            free(copy);
+            free(sort_type);
+            free(row_str);
             int print = 0;
             int print2 = 0;
             int flag = 0;
@@ -307,15 +307,15 @@ void *connection_handler(void *socket_desc){
               //a safer way to check if numeric
               int numericFlag = 0;
               int count = 0;
-              printf("zero: %s\n", partial[0].str[sort_column]);
+              //printf("zero: %s\n", partial[0].str[sort_column]);
               while (rowNumbers < dataRow-1){
-                  printf("datarow!!!!!!!: %s\n", partial[rowNumbers].str[sort_column]);
+                  //printf("datarow!!!!!!!: %s\n", partial[rowNumbers].str[sort_column]);
                   sort_array[rowNumbers].index = partial[rowNumbers].index;
                   sort_array[rowNumbers].str = partial[rowNumbers].str[sort_column];
                   numericFlag += isNumeric(sort_array[rowNumbers].str);
                   rowNumbers++;
               }
-              printf("%s\n", sort_array[0].str);
+              // printf("%s\n", sort_array[0].str);
               // int r = 0;
               // for (; r < dataRow-1; r++){
               //   printf("%s ----- %d\n", sort_array[r].str, sort_array[r].index);
@@ -334,6 +334,7 @@ void *connection_handler(void *socket_desc){
               // for (; test < MAXROW; test++){
               //     printf("%d\n", sort_array[test].index);
               // }
+
               if(MAXROW>=0){
                   mergeSort(sort_array, 0, MAXROW-1,numeric);
               }
@@ -344,13 +345,10 @@ void *connection_handler(void *socket_desc){
               // }
 
 
-              // free partial
-
-              // int freei = 0;
-              // for(;freei<7000;freei++){
-              //     free(partial[freei].str);
-              // }
-              free(sort_array);
+              int freei = 0;
+              for(;freei<7000;freei++){
+                  free(partial[freei].str);
+              }
               free(partial);
 
               partial = malloc(7000 * sizeof(SortArray));
@@ -370,10 +368,11 @@ void *connection_handler(void *socket_desc){
 
               index_partial=0;
           //}
+          free(sort_array);
 
           continue;
         }
-        if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
+        else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
           // int icount = 0;
           // int j = 0;
           // for(;icount<80000;icount++){
@@ -398,6 +397,7 @@ void *connection_handler(void *socket_desc){
           // for(;i<7000;i++){
           //     partial[i].str = malloc(sizeof(char*)*28);
           // }
+          printf("sendback %s\n", sendback_message);
           char* tmpstr = strdup(sendback_message);
           char *token = strtok_single(tmpstr, ",");
           char * tempStr;
@@ -453,7 +453,7 @@ void *connection_handler(void *socket_desc){
             token_count++;
             token = strtok_single(NULL, ",");
           }
-          free(dummy);
+          //free(dummy);
           partial[index_partial].index = index_partial;
           index_partial++;
         }
@@ -473,8 +473,7 @@ void *connection_handler(void *socket_desc){
         // perror("recv failed");
     }
 
-    //Free the socket pointer
-    free(socket_desc);
+
 
 
     // i = 0;
@@ -488,5 +487,7 @@ void *connection_handler(void *socket_desc){
     //
     // free(entire);
     pthread_mutex_unlock(&sort_lock);
+    //Free the socket pointer
+    free(socket_desc);
     return 0;
 }
