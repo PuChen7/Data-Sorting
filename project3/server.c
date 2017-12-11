@@ -89,6 +89,13 @@ int isConnecting(char* ip){//1 for true, 0 for false
 }
 int main(int argc , char *argv[])
 {
+
+    partial = malloc(7000 * sizeof(SortArray));
+    int malloci = 0;
+    for(;malloci<7000;malloci++){
+        partial[malloci].str = malloc(sizeof(char*)*28);
+    }
+
     entire = malloc(80000 * sizeof(SortArray));
     int i = 0;
     for(;i<80000;i++){
@@ -300,11 +307,11 @@ void *connection_handler(void *socket_desc){
               //a safer way to check if numeric
               int numericFlag = 0;
               int count = 0;
-
+              printf("zero: %s\n", partial[0].str[sort_column]);
               while (rowNumbers < dataRow-1){
                   printf("datarow!!!!!!!: %s\n", partial[rowNumbers].str[sort_column]);
                   sort_array[rowNumbers].index = partial[rowNumbers].index;
-                  sort_array[rowNumbers].str = strdup(partial[rowNumbers].str[sort_column]);
+                  sort_array[rowNumbers].str = partial[rowNumbers].str[sort_column];
                   numericFlag += isNumeric(sort_array[rowNumbers].str);
                   rowNumbers++;
               }
@@ -339,10 +346,11 @@ void *connection_handler(void *socket_desc){
 
               // free partial
 
-              int freei = 0;
-              for(;freei<7000;freei++){
-                  free(partial[freei].str);
-              }
+              // int freei = 0;
+              // for(;freei<7000;freei++){
+              //     free(partial[freei].str);
+              // }
+              free(sort_array);
               free(partial);
 
               partial = malloc(7000 * sizeof(SortArray));
@@ -354,12 +362,12 @@ void *connection_handler(void *socket_desc){
 
               file_count++;
 
-              freei = 0;
-              for(;freei<dataRow-1;freei++){
-                  free(sort_array[freei].str);
-              }
+              // freei = 0;
+              // for(;freei<dataRow-1;freei++){
+              //     free(sort_array[freei].str);
+              // }
 
-              free(sort_array);
+
               index_partial=0;
           //}
 
@@ -385,11 +393,11 @@ void *connection_handler(void *socket_desc){
         } else {
 
           // partial array for holding partial csv
-          partial = malloc(7000 * sizeof(SortArray));
-          int i = 0;
-          for(;i<7000;i++){
-              partial[i].str = malloc(sizeof(char*)*28);
-          }
+          // partial = malloc(7000 * sizeof(SortArray));
+          // int i = 0;
+          // for(;i<7000;i++){
+          //     partial[i].str = malloc(sizeof(char*)*28);
+          // }
           char* tmpstr = strdup(sendback_message);
           char *token = strtok_single(tmpstr, ",");
           char * tempStr;
@@ -440,8 +448,8 @@ void *connection_handler(void *socket_desc){
             }
 
             /* store token into partial */
-            partial[index_partial].str[token_count] = strdup(token);
-            printf("%s\n", partial[index_partial].str[token_count]);
+            partial[index_partial].str[token_count] = token;
+            //printf("%s\n", partial[index_partial].str[token_count]);
             token_count++;
             token = strtok_single(NULL, ",");
           }
