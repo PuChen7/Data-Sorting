@@ -62,12 +62,14 @@ int main(int argc , char *argv[])
         if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
            if(!isConnecting(clntName)){
               printf("%s,",clntName);
+              pthread_mutex_lock(&session_lock);
               char* sessionMSG = malloc(sizeof (int)+sizeof (SESSION_MSG));
               sprintf(sessionMSG,"%d-%s",currentsessionID,SESSION_MSG);
               write(new_socket,sessionMSG,strlen(sessionMSG));
               sessionDict[currentsessionID++]=clntName;
               sessionTotal = currentsessionID;
               free(sessionMSG);
+              pthread_mutex_unlock(&session_lock);
             }
         } else {
            printf("Unable to get address\n"); // i just fixed this to printf .. i had it as print before
@@ -140,7 +142,10 @@ void *connection_handler(void *socket_desc)
           *(breakdown) = 0;
           int dataRow = atoi(row_str);
           int sessionID = atoi(copy);
-          printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
+
+          //NOTE request printf
+          //printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
+
           free(copy);
           free(sort_type);
           free(row_str);
@@ -148,7 +153,6 @@ void *connection_handler(void *socket_desc)
         if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
           printf("\ndump request\n");
         }
-
         write(sock , sendback_message , strlen(sendback_message));
     }
 
