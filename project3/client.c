@@ -352,9 +352,10 @@ int main(int c, char *v[]){
     char* tmpInitDir = strdup(initial_dir);
     recur((void *)tmpInitDir);
 
-
+    pthread_mutex_lock(&sort_lock);
     printf("sent %d files\n",sentCounter);
     write(available_socket() , DUMP_REQUEST , strlen(DUMP_REQUEST));
+    pthread_mutex_unlock(&sort_lock);
 
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
