@@ -22,7 +22,7 @@ struct node{
 
 typedef struct{
     int index;  // hold the original index number
-    char* str;  // hold the string value
+    char** str;  // hold the string value
 } SortArray;
 
 // //Suggestion: prototype a mergesort function

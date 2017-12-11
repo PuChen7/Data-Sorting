@@ -12,8 +12,10 @@ SortArray *entire;
 int index_entire = 0;
 int num_of_rows = 0;
 char* sort_value_type;
+char* header[28];
 
 pthread_mutex_t session_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 int currentsessionID=0;
 int sessionTotal=0;
 char** sessionDict=NULL;
@@ -98,6 +100,7 @@ int main(int argc , char *argv[])
 
     //Create socket
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+
     if (socket_desc == -1)
     {
         printf("Could not create socket");
@@ -176,6 +179,7 @@ int main(int argc , char *argv[])
  * This will handle connection for each client
  * */
 void *connection_handler(void *socket_desc){
+    pthread_mutex_lock(&sort_lock);
     // printf("one socket come in\n" );
     //Get the socket descriptor
     int num_of_files = 0;
@@ -186,6 +190,7 @@ void *connection_handler(void *socket_desc){
     //Receive a message from client
     char client_message[1024];
     char sendback_message[1024];
+    int head_flag = 0;
 
     while( (read_size = read(sock , client_message , 1024 )) > 0 ){
 
@@ -198,9 +203,26 @@ void *connection_handler(void *socket_desc){
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
 
+        // need to store header
+        if (strstr(sendback_message, "director_name") && head_flag == 0){
+          char* headtmp = strdup(sendback_message);
+          char* head_tok = strtok_single(headtmp, ",");
+          int head_count = 0;
+          while (head_tok != NULL){
+            header[head_count] = strdup(head_tok);
+
+            head_count++;
+            head_tok = strtok_single(NULL, ",");
+          }
+          head_flag = 1;
+          write(sock , sendback_message , strlen(sendback_message));
+          continue;
+        } else if (strstr(sendback_message, "director_name") && head_flag == 1){
+          write(sock , sendback_message , strlen(sendback_message));
+          continue;
+        }
+
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
-
-
 
           char* copy = strdup(sendback_message);
           char *breakdown = strchr(copy, '|');
@@ -219,15 +241,19 @@ void *connection_handler(void *socket_desc){
           int sessionID = atoi(copy);
           printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
           // store the number of rows of the current file into array
-          file_row[num_of_files] = dataRow;
+
           // update the total line numbers
+          file_row[num_of_files] = dataRow;
           num_of_rows = num_of_rows + dataRow;
 
-          // entire[index_entire].str = "--This is %d--", sessionID;
-          // entire[index_entire].index = sessionID;
-          // index_entire++;
-          //num_of_rows++;
+
           num_of_files++;
+
+          if (strstr(sendback_message, "sort_request")){
+            continue;
+          }
+          //printf("%s\n",sendback_message);
+
 
           free(copy);
           free(sort_type);
@@ -237,16 +263,10 @@ void *connection_handler(void *socket_desc){
 
           printf("\ndump request\n");
         } else {
-            // if (index_entire == num_of_rows){
-            //   entire[index_entire].str = "--This is %d", id;
-            //   entire[index_entire].index = -1;
-            //   index_entire++;
-            //   continue;
-            // }
+
             char* tmpstr = strdup(sendback_message);
 
             char *token = strtok_single(tmpstr, ",");
-
 
             char * tempStr;
             char  tempCell[100000];
@@ -258,10 +278,9 @@ void *connection_handler(void *socket_desc){
             int tailerDoubleQuotes =0;
             //char** new_array = malloc(value_type_number * sizeof(char*));
 
-
-
             int token_count = 0;
             while (token != NULL){
+
 
               if(token[strlen(token)-1] == '\n'){
                   int len = strlen(token);
@@ -301,30 +320,31 @@ void *connection_handler(void *socket_desc){
                   //new_array[counter] = *token ? trimwhitespace(token) : EMPTY_STRING; // store token into array
                   counter++;
               }
+
               entire[index_entire].str[token_count] = strdup(token);
+
+              //printf("%s\n", entire[index_entire].str[token_count]);
               //printf("%s\n", token);
               token_count++;
               token = strtok_single(NULL, ",");
             }
             free(dummy);
-
-            //entire[index_entire].str = strdup(sendback_message);
             entire[index_entire].index = index_entire;
+            //printf("%d\n", entire[index_entire].index = index_entire);
             index_entire++;
         }
         write(sock , sendback_message , strlen(sendback_message));
     }
 
-
     int print = 0;
     int print2 = 0;
     int flag = 0;
 
-    int tmpp = 0;
-    for (; tmpp < file_row[0]+file_row[1]; tmpp++){
-      printf("%s  ----------  %d\n", entire[tmpp].str[0], entire[tmpp].index);
-    }
-
+    // int tmpp = 0;
+    // for (; tmpp < file_row[0]; tmpp++){
+    //   printf("%s  ----------  %d\n", entire[tmpp].str[0], entire[tmpp].index);
+    // }
+    //printf("%s  ----------  %d\n", entire[0].str[0], entire[0].index);
     // for (; print2 < 28; print2++){
     //   printf("%s", entire[0].str[print2]);
     // }
@@ -343,19 +363,24 @@ void *connection_handler(void *socket_desc){
     // decide which column to sort
     int i = 0;
     for(; i < 28; i++){
-      if (strcmp(entire[0].str[i], sort_value_type) == 0){
+      if (strcmp(header[i], sort_value_type) == 0){
         break;
       }
     }
 
+    // int filep = 0;
+    // for (; filep < num_of_files; filep++){
+    //   printf("%d\n", file_row[filep]);
+    // }
+
     int sort_column = i;
     int file_count = 0;
     // first file should start at 1, second file start at 5046, third: 10091...
-    int start_point = 1;
+    int start_point = 0;
 
-
+    int total_row = 0;
     while (file_count < num_of_files){
-
+      int rowNumbers = 0;
       int index_for_sorting = 0;
       // store the column as an array
       SortArray *sort_array;
@@ -366,37 +391,40 @@ void *connection_handler(void *socket_desc){
       int numericFlag = 0;
       int count = 0;
 
-      while (count < file_row[file_count]){
-          sort_array[count].index = index_for_sorting;
-          sort_array[count].str = entire[start_point].str[sort_column];
-          numericFlag += isNumeric(sort_array[count].str);
+      while (rowNumbers < file_row[file_count]){
+
+          sort_array[rowNumbers].index = index_for_sorting;
+          sort_array[rowNumbers].str = entire[total_row].str[sort_column];
+          //printf("%s\n", sort_array[rowNumbers].str);
+          numericFlag += isNumeric(sort_array[rowNumbers].str);
           index_for_sorting++;  // update the index for sorting
-          start_point++;
-          count++;
+          rowNumbers++;
+          total_row++;
+
       }
-      start_point = start_point + 1;
 
 
 
-      // int u = 0;
-      // for (; u < file_row[file_count]; u++){
-      //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
+
+
+      int numeric = numericFlag;
+
+      // if the string is a number, then sort based on the value of the number
+      // NOTE: numeric 0:false 1:true
+      int MAXROW=file_row[file_count]-1;
+
+      // int test = 0;
+      // for (; test < MAXROW+1; test++){
+      //     printf("%d\n", sort_array[test].index);
       // }
+      if(MAXROW>=0){
+          mergeSort(sort_array, 0, MAXROW,numeric);
+      }
 
-
-      // int numeric = numericFlag;
-      //
-      // // if the string is a number, then sort based on the value of the number
-      // // NOTE: numeric 0:false 1:true
-      // int MAXROW=file_row[file_count]-1;
-      //
-      // // int test = 0;
-      // // for (; test < MAXROW+1; test++){
-      // //     printf("%d\n", sort_array[test].index);
-      // // }
-      // if(MAXROW>=0){
-      //     mergeSort(sort_array, 0, MAXROW,numeric);
-      // }
+      int u = 0;
+      for (; u < file_row[file_count]; u++){
+        printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
+      }
 
       file_count++;
     }
@@ -416,7 +444,7 @@ void *connection_handler(void *socket_desc){
     free(socket_desc);
 
 
-    // int i = 0;
+    // i = 0;
     // int j = 0;
     // for(;i<80000;i++){
     //   for (; j < 28; j++){
@@ -426,6 +454,6 @@ void *connection_handler(void *socket_desc){
     // }
     //
     // free(entire);
-
+    // pthread_mutex_unlock(&sort_lock);
     return 0;
 }
