@@ -332,7 +332,7 @@ void *connection_handler(void *socket_desc){
               }
 
               // int u = 0;
-              // for (; u < file_row[file_count]; u++){
+              // for (; u < file_row[file_count]-1; u++){
               //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
               // }
               file_count++;
