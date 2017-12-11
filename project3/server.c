@@ -252,22 +252,102 @@ void *connection_handler(void *socket_desc){
           free(copy);
           free(sort_type);
           free(row_str);
-          if (strstr(sendback_message, "sort_request")){
-            continue;
+            int print = 0;
+            int print2 = 0;
+            int flag = 0;
+
+            // int tmpp = 0;
+            // for (; tmpp < file_row[0]; tmpp++){
+            //   printf("%s  ----------  %d\n", entire[tmpp].str[0], entire[tmpp].index);
+            // }
+            // printf("%s  ----------  %d\n", entire[0].str[0], entire[0].index);
+            // // for (; print2 < 28; print2++){
+            // //   printf("%s", entire[0].str[print2]);
+            // // }
+
+
+            // for (; print < num_of_rows; print++){
+            //   if (print == file_row[flag]){
+            //     for (; print2 < 28; print2++){
+            //         printf("%s", entire[print].str[print2]);
+            //     }
+            //     flag = 1;
+            //   }
+            //   print2 = 0;
+            // }
+
+            //decide which column to sort
+            int i = 0;
+            for(; i < 28; i++){
+              if (strcmp(header[i], sort_value_type) == 0){
+                break;
+              }
+            }
+
+            // int filep = 0;
+            // for (; filep < num_of_files; filep++){
+            //   printf("%d\n", file_row[filep]);
+            // }
+
+            int sort_column = i;
+            int file_count = 0;
+            // first file should start at 1, second file start at 5046, third: 10091...
+            int start_point = 0;
+
+            int total_row = 0;
+            while (file_count < num_of_files){
+              int rowNumbers = 0;
+              int index_for_sorting = 0;
+              // store the column as an array
+              SortArray *sort_array;
+              sort_array = (SortArray*) malloc(file_row[file_count] * sizeof(SortArray));
+
+              int sortArraycount=0;
+              //a safer way to check if numeric
+              int numericFlag = 0;
+              int count = 0;
+
+              while (rowNumbers < file_row[file_count]-1){
+                  sort_array[rowNumbers].index = index_for_sorting;
+                  sort_array[rowNumbers].str = entire[total_row].str[sort_column];
+                  numericFlag += isNumeric(sort_array[rowNumbers].str);
+                  index_for_sorting++;  // update the index for sorting
+                  rowNumbers++;
+                  total_row++;
+
+              }
+
+
+              int numeric = numericFlag;
+
+              // if the string is a number, then sort based on the value of the number
+              // NOTE: numeric 0:false 1:true
+              int MAXROW=file_row[file_count]-1;
+              // int test = 0;
+              // for (; test < MAXROW; test++){
+              //     printf("%d\n", sort_array[test].index);
+              // }
+              if(MAXROW>=0){
+                  mergeSort(sort_array, 0, MAXROW-1,numeric);
+              }
+
+              // int u = 0;
+              // for (; u < file_row[file_count]; u++){
+              //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
+              // }
+              file_count++;
+              free(sort_array);
           }
           //printf("%s\n",sendback_message);
 
-
-
+          continue;
         }
         if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
-          printf("free entire sub\n" );
           int icount = 0;
           int j = 0;
           for(;icount<80000;icount++){
             free(entire[icount].str);
           }
-          printf("free entire\n" );
           free(entire);
 
           entire = malloc(80000 * sizeof(SortArray));
@@ -338,8 +418,6 @@ void *connection_handler(void *socket_desc){
               }
               entire[index_entire].str[token_count] = malloc(sizeof(char) * strlen(token));
               strcpy(entire[index_entire].str[token_count], token);
-
-              //printf("%s\n", entire[index_entire].str[token_count]);
               //printf("%s\n", token);
               token_count++;
               token = strtok_single(NULL, ",");
@@ -352,98 +430,7 @@ void *connection_handler(void *socket_desc){
         write(sock , sendback_message , strlen(sendback_message));
     }
 
-    int print = 0;
-    int print2 = 0;
-    int flag = 0;
 
-    int tmpp = 0;
-    for (; tmpp < file_row[0]; tmpp++){
-      printf("%s  ----------  %d\n", entire[tmpp].str[0], entire[tmpp].index);
-    }
-    printf("%s  ----------  %d\n", entire[0].str[0], entire[0].index);
-    for (; print2 < 28; print2++){
-      printf("%s", entire[0].str[print2]);
-    }
-
-
-    for (; print < num_of_rows; print++){
-      if (print == file_row[flag]){
-        for (; print2 < 28; print2++){
-            printf("%s", entire[print].str[print2]);
-        }
-        flag = 1;
-      }
-      print2 = 0;
-    }
-
-    //decide which column to sort
-    int i = 0;
-    for(; i < 28; i++){
-      if (strcmp(header[i], sort_value_type) == 0){
-        break;
-      }
-    }
-
-    // int filep = 0;
-    // for (; filep < num_of_files; filep++){
-    //   printf("%d\n", file_row[filep]);
-    // }
-
-    int sort_column = i;
-    int file_count = 0;
-    // first file should start at 1, second file start at 5046, third: 10091...
-    int start_point = 0;
-
-    int total_row = 0;
-    while (file_count < num_of_files){
-      int rowNumbers = 0;
-      int index_for_sorting = 0;
-      // store the column as an array
-      SortArray *sort_array;
-      sort_array = (SortArray*) malloc(file_row[file_count] * sizeof(SortArray));
-
-      int sortArraycount=0;
-      //a safer way to check if numeric
-      int numericFlag = 0;
-      int count = 0;
-
-      while (rowNumbers < file_row[file_count]){
-
-          sort_array[rowNumbers].index = index_for_sorting;
-          sort_array[rowNumbers].str = entire[total_row].str[sort_column];
-          printf("%s\n", entire[total_row].str[sort_column]);
-          numericFlag += isNumeric(sort_array[rowNumbers].str);
-          index_for_sorting++;  // update the index for sorting
-          rowNumbers++;
-          total_row++;
-
-      }
-
-
-
-
-
-      int numeric = numericFlag;
-
-      // if the string is a number, then sort based on the value of the number
-      // NOTE: numeric 0:false 1:true
-      int MAXROW=file_row[file_count]-1;
-
-      // int test = 0;
-      // for (; test < MAXROW+1; test++){
-      //     printf("%d\n", sort_array[test].index);
-      // }
-      if(MAXROW>=0){
-          mergeSort(sort_array, 0, MAXROW,numeric);
-      }
-
-      // int u = 0;
-      // for (; u < file_row[file_count]; u++){
-      //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
-      // }
-
-      file_count++;
-    }
 
 
     if(read_size == 0)
