@@ -90,7 +90,6 @@ void *send_request(char* send_file_path)
         fclose(input_file);
         return NULL;
     }
-    printf("session ID %s \n",send_file_path );
 
     int currentSocket = available_socket();
     sentCounter++;
@@ -117,16 +116,11 @@ void *send_request(char* send_file_path)
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
 
-        // puts("Server replies :");
-        // printf("%s",receive);
-
     }
     char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type)+sizeof(int));
     sprintf(infoString,"%d_%d-%s|%s",sessionID,row,sort_value_type,SORT_REQUEST);
     write(currentSocket, infoString , strlen(infoString));
     fclose(input_file);
-
-
     pthread_mutex_unlock(&sort_lock);
 
     return NULL;
@@ -159,8 +153,8 @@ int count_header(char* input_path){
               token = strtok_single(NULL, ",");
               value_type_number++;    // update the number of columns(value types).
           }
-          free(headerLine);
-          free(tmp);
+          // free(headerLine);
+          // free(tmp);
           break;
       }
     }
@@ -351,8 +345,32 @@ int main(int c, char *v[]){
     recur((void *)tmpInitDir);
 
     pthread_mutex_lock(&sort_lock);
-    printf("sent %d files\n",sentCounter);
-    write(available_socket() , DUMP_REQUEST , strlen(DUMP_REQUEST));
+    char *cat_tmp = malloc(sizeof(char)*200);
+    strcpy(cat_tmp, "/AllFiles-sorted-<");
+    strcat(strcat(cat_tmp, sort_value_type),">.csv");
+    strcat(output_path, cat_tmp);
+    FILE *output_file = fopen(output_path, "w");
+    write(socketpool[0] , DUMP_REQUEST , strlen(DUMP_REQUEST));
+
+    int read_size;
+    char server_message[2048*5];
+    // read_size = read(socketpool[0] , server_message , strlen("_rownumber\n")+sizeof(int) );
+    // if(strstr(server_message,"_rownumber\n"))
+    //     printf("%s\n",server_message );
+    int size=0;
+    while( (read_size = read(socketpool[0] , server_message , 2048*5 )) > 0 ){
+      if(strstr(server_message,"FILE_INFO")!=NULL){
+        char* p = strstr(server_message,"FILE_INFO");
+        *p = 0;
+      }
+      if(strstr(server_message,"FINISH")!=NULL){
+        break;
+      }
+      fprintf(output_file, "%s",server_message);
+      printf("server replies-------%s\n", server_message);
+
+    }
+    fclose(output_file);
     pthread_mutex_unlock(&sort_lock);
 
     pthread_mutex_destroy(&path_lock);
@@ -364,6 +382,7 @@ int main(int c, char *v[]){
       close(socketpool[init]);
       //printf("%dth th socket Disconnected\n",init);
     }
+    free(cat_tmp);
     free(socketpool);
     return 0;
 }
