@@ -88,7 +88,7 @@ int isConnecting(char* ip){//1 for true, 0 for false
     return 0;
 }
 int main(int argc , char *argv[])
-{
+  {
 
 
 
@@ -257,6 +257,7 @@ void *connection_handler(void *socket_desc){
           num_of_rows = num_of_rows + dataRow;
           num_of_files++;
 
+            //
             free(copy);
             free(sort_type);
             free(row_str);
@@ -265,25 +266,6 @@ void *connection_handler(void *socket_desc){
             int print2 = 0;
             int flag = 0;
 
-            // int tmpp = 0;
-            // for (; tmpp < file_row[0]; tmpp++){
-            //   printf("%s  ----------  %d\n", entire[tmpp].str[0], entire[tmpp].index);
-            // }
-            // printf("%s  ----------  %d\n", entire[0].str[0], entire[0].index);
-            // // for (; print2 < 28; print2++){
-            // //   printf("%s", entire[0].str[print2]);
-            // // }
-
-
-            // for (; print < num_of_rows; print++){
-            //   if (print == file_row[flag]){
-            //     for (; print2 < 28; print2++){
-            //         printf("%s", entire[print].str[print2]);
-            //     }
-            //     flag = 1;
-            //   }
-            //   print2 = 0;
-            // }
 
             //decide which column to sort
             int i = 0;
@@ -293,10 +275,6 @@ void *connection_handler(void *socket_desc){
               }
             }
 
-            // int filep = 0;
-            // for (; filep < num_of_files; filep++){
-            //   printf("%d\n", file_row[filep]);
-            // }
 
             int sort_column = i;
             int file_count = 0;
@@ -305,6 +283,10 @@ void *connection_handler(void *socket_desc){
             // while (file_count < num_of_files){
               int rowNumbers = 0;
               // store the column as an array
+                          // int filep = 0;
+            // for (; filep < num_of_files; filep++){
+            //   printf("%d\n", file_row[filep]);
+            // }
               SortArray *sort_array;
               sort_array = (SortArray*) malloc(dataRow * sizeof(SortArray));
 
@@ -313,7 +295,6 @@ void *connection_handler(void *socket_desc){
               int count = 0;
               //printf("zero: %s\n", partial[0].str[sort_column]);
               while (rowNumbers < dataRow-1){
-                  //printf("datarow!!!!!!!: %s\n", partial[rowNumbers].str[sort_column]);
                   sort_array[rowNumbers].index = partial[rowNumbers].index;
                   sort_array[rowNumbers].str = partial[rowNumbers].str[sort_column];
                   numericFlag += isNumeric(sort_array[rowNumbers].str);
@@ -326,10 +307,6 @@ void *connection_handler(void *socket_desc){
               // }
 
 
-              printf("ENDMN*******EDNENE\n");
-
-
-
               int numeric = numericFlag;
 
               // if the string is a number, then sort based on the value of the number
@@ -340,72 +317,57 @@ void *connection_handler(void *socket_desc){
               // for (; test < MAXROW; test++){
               //     printf("%d\n", sort_array[test].index);
               // }
-
-              printf("testing\n" );
               if(MAXROW>=0){
                   mergeSort(sort_array, 0, MAXROW-1,numeric);
               }
 
-              // int u = 0;
-              // for (; u < file_row[file_count]-1; u++){
-              //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
-              // }
-              //sleep(1);
+          // int u = 0;
+          // for (; u < file_row[file_count]-1; u++){
+          //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
+          // }
+          //sleep(1);
 
 
-              int freei = 0;
-              for(;freei<7000;freei++){
-                  free(partial[freei].str);
-              }
-              free(partial);
-
-              partial = malloc(7000 * sizeof(SortArray));
-              int malloci = 0;
-              for(;malloci<7000;malloci++){
-                  partial[malloci].str = malloc(sizeof(char*)*28);
-              }
+          // int freei = 0;
+          // for(;freei<7000;freei++){
+          //     free(partial[freei].str);
+          // }
 
 
-              file_count++;
+          int freei = 0;
+          for(;freei<dataRow-1;freei++){
+              free(sort_array[freei].str);
+          }
+          free(sort_array);
+          free(partial);
 
-              // freei = 0;
-              // for(;freei<dataRow-1;freei++){
-              //     free(sort_array[freei].str);
-              // }
-
-
-              index_partial=0;
-          //}
-              free(sort_array);
-
+          partial = malloc(7000 * sizeof(SortArray));
+          int malloci = 0;
+          for(;malloci<7000;malloci++){
+              partial[malloci].str = malloc(sizeof(char*)*28);
+          }
+          file_count++;
+          index_partial=0;
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
-          // int icount = 0;
-          // int j = 0;
-          // for(;icount<80000;icount++){
-          //   free(entire[icount].str);
-          // }
-          // free(entire);
-          //
-          // entire = malloc(80000 * sizeof(SortArray));
-          // int i = 0;
-          // for(;i<80000;i++){
-          //     entire[i].str = malloc(sizeof(char*)*28);
-          // }
+          int icount = 0;
+          int j = 0;
+          for(;icount<80000;icount++){
+            free(entire[icount].str);
+          }
+          free(entire);
+
+          entire = malloc(80000 * sizeof(SortArray));
+          int i = 0;
+          for(;i<80000;i++){
+              entire[i].str = malloc(sizeof(char*)*28);
+          }
 
           index_partial=0;
           num_of_rows=0;
           printf("\ndump request\n");
         } else {
-
-          // partial array for holding partial csv
-          // partial = malloc(7000 * sizeof(SortArray));
-          // int i = 0;
-          // for(;i<7000;i++){
-          //     partial[i].str = malloc(sizeof(char*)*28);
-          // }
-          printf("sendback %s\n", sendback_message);
           char* tmpstr = strdup(sendback_message);
           char *token = strtok_single(tmpstr, ",");
           char * tempStr;
@@ -457,19 +419,16 @@ void *connection_handler(void *socket_desc){
 
             /* store token into partial */
             partial[index_partial].str[token_count] = token;
-            //printf("%s\n", partial[index_partial].str[token_count]);
             token_count++;
             token = strtok_single(NULL, ",");
           }
-          //free(dummy);
+          free(dummy);
           partial[index_partial].index = index_partial;
           index_partial++;
 
         }
         write(sock , sendback_message , strlen(sendback_message));
     }
-
-
 
     if(read_size == 0)
     {
@@ -481,19 +440,6 @@ void *connection_handler(void *socket_desc){
         perror("recv failed");
     }
 
-
-
-
-    // i = 0;
-    // int j = 0;
-    // for(;i<80000;i++){
-    //   for (; j < 28; j++){
-    //     free(entire[i].str[j]);
-    //   }
-    //   j = 0;
-    // }
-    //
-    // free(entire);
     pthread_mutex_unlock(&sort_lock);
     //Free the socket pointer
     free(socket_desc);
