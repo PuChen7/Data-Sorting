@@ -9,8 +9,8 @@
 #define SESSION_MSG "session_msg"
 
 SortArray *entire;
-SortArray *partial;
-int index_partial = 0;
+
+
 int num_of_rows = 0;
 char* sort_value_type;
 char* header[28];
@@ -90,11 +90,8 @@ int isConnecting(char* ip){//1 for true, 0 for false
 int main(int argc , char *argv[])
 {
 
-    partial = malloc(7000 * sizeof(SortArray));
-    int malloci = 0;
-    for(;malloci<7000;malloci++){
-        partial[malloci].str = malloc(sizeof(char*)*28);
-    }
+
+
 
     entire = malloc(80000 * sizeof(SortArray));
     int i = 0;
@@ -116,7 +113,7 @@ int main(int argc , char *argv[])
 
     //Prepare the sockaddr_in structure
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons( atoi(argv[2]) );
 
     //Bind
@@ -132,12 +129,10 @@ int main(int argc , char *argv[])
 
     //Accept and incoming connection
     printf("Received connections from: ");
-    c = sizeof(struct sockaddr_in);
+    c = sizeof(server);
     while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        //puts("Connection accepted");
         char clntName[INET_ADDRSTRLEN];
-
         if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
            if(!isConnecting(clntName)){
               printf("%s,",clntName);
@@ -152,7 +147,6 @@ int main(int argc , char *argv[])
            printf("Unable to get address\n"); // i just fixed this to printf .. i had it as print before
         }        //Reply to the client
 
-        //sleep(1);
         pthread_t sniffer_thread;
         new_sock = malloc(1);
         *new_sock = new_socket;
@@ -189,6 +183,13 @@ int main(int argc , char *argv[])
  * */
 void *connection_handler(void *socket_desc){
     pthread_mutex_lock(&sort_lock);
+    SortArray *partial;
+    int index_partial = 0;
+    partial = malloc(7000 * sizeof(SortArray));
+    int malloci = 0;
+    for(;malloci<7000;malloci++){
+        partial[malloci].str = malloc(sizeof(char*)*28);
+    }
     // printf("one socket come in\n" );
     //Get the socket descriptor
     int num_of_files = 0;
@@ -202,6 +203,7 @@ void *connection_handler(void *socket_desc){
     int head_flag = 0;
 
     while( (read_size = read(sock , client_message , 1024 )) > 0 ){
+
         //Send the message back to client
         strcpy(sendback_message,client_message);
         char *p = strchr(sendback_message, '\n');
@@ -209,26 +211,26 @@ void *connection_handler(void *socket_desc){
 
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
-
+        if(strstr(sendback_message,SORT_REQUEST)==NULL){
         // need to store header
         if (strstr(sendback_message, "director_name") && head_flag == 0){
-          char* headtmp = strdup(sendback_message);
-          char* head_tok = strtok_single(headtmp, ",");
-          int head_count = 0;
-          while (head_tok != NULL){
-            header[head_count] = strdup(head_tok);
+              char* headtmp = strdup(sendback_message);
+              char* head_tok = strtok_single(headtmp, ",");
+              int head_count = 0;
+              while (head_tok != NULL){
+                header[head_count] = strdup(head_tok);
 
-            head_count++;
-            head_tok = strtok_single(NULL, ",");
-          }
-          head_flag = 1;
-          write(sock , sendback_message , strlen(sendback_message));
-          continue;
-        } else if (strstr(sendback_message, "director_name") && head_flag == 1){
-          write(sock , sendback_message , strlen(sendback_message));
-          continue;
+                head_count++;
+                head_tok = strtok_single(NULL, ",");
+              }
+              head_flag = 1;
+              write(sock , sendback_message , strlen(sendback_message));
+              continue;
+            } else if (strstr(sendback_message, "director_name") && head_flag == 1){
+              write(sock , sendback_message , strlen(sendback_message));
+              continue;
+            }
         }
-
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
 
           char* copy = strdup(sendback_message);
@@ -247,6 +249,7 @@ void *connection_handler(void *socket_desc){
           int dataRow = atoi(row_str);
           int sessionID = atoi(copy);
           printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
+
           // store the number of rows of the current file into array
 
           // update the total line numbers
@@ -257,6 +260,7 @@ void *connection_handler(void *socket_desc){
             free(copy);
             free(sort_type);
             free(row_str);
+
             int print = 0;
             int print2 = 0;
             int flag = 0;
@@ -302,7 +306,7 @@ void *connection_handler(void *socket_desc){
               int rowNumbers = 0;
               // store the column as an array
               SortArray *sort_array;
-              sort_array = (SortArray*) malloc(dataRow-1 * sizeof(SortArray));
+              sort_array = (SortArray*) malloc(dataRow * sizeof(SortArray));
 
               //a safer way to check if numeric
               int numericFlag = 0;
@@ -325,16 +329,19 @@ void *connection_handler(void *socket_desc){
               printf("ENDMN*******EDNENE\n");
 
 
+
               int numeric = numericFlag;
 
               // if the string is a number, then sort based on the value of the number
               // NOTE: numeric 0:false 1:true
               int MAXROW=dataRow-1;
+
               // int test = 0;
               // for (; test < MAXROW; test++){
               //     printf("%d\n", sort_array[test].index);
               // }
 
+              printf("testing\n" );
               if(MAXROW>=0){
                   mergeSort(sort_array, 0, MAXROW-1,numeric);
               }
@@ -343,6 +350,7 @@ void *connection_handler(void *socket_desc){
               // for (; u < file_row[file_count]-1; u++){
               //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
               // }
+              //sleep(1);
 
 
               int freei = 0;
@@ -368,7 +376,7 @@ void *connection_handler(void *socket_desc){
 
               index_partial=0;
           //}
-          free(sort_array);
+              free(sort_array);
 
           continue;
         }
@@ -456,10 +464,10 @@ void *connection_handler(void *socket_desc){
           //free(dummy);
           partial[index_partial].index = index_partial;
           index_partial++;
+
         }
         write(sock , sendback_message , strlen(sendback_message));
     }
-
 
 
 
@@ -470,7 +478,7 @@ void *connection_handler(void *socket_desc){
     }
     else if(read_size == -1)
     {
-        // perror("recv failed");
+        perror("recv failed");
     }
 
 
@@ -489,5 +497,6 @@ void *connection_handler(void *socket_desc){
     pthread_mutex_unlock(&sort_lock);
     //Free the socket pointer
     free(socket_desc);
+
     return 0;
 }

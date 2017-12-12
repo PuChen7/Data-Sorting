@@ -79,7 +79,7 @@ int available_socket(){
 
 void *send_request(char* send_file_path)
 {
-
+    pthread_mutex_lock(&sort_lock);
     char* tmp_path=strdup(send_file_path);
 
     FILE    *input_file = fopen(tmp_path, "r");
@@ -90,11 +90,11 @@ void *send_request(char* send_file_path)
         fclose(input_file);
         return NULL;
     }
-    pthread_mutex_lock(&sort_lock);
+    printf("session ID %s \n",send_file_path );
 
     int currentSocket = available_socket();
     sentCounter++;
-    char* line=malloc(1024);    // temp array for holding csv file lines.
+    char* line[1024];    // temp array for holding csv file lines.
     char buf[1024];
     char* receive[1024];
     int row = 0;
@@ -120,16 +120,15 @@ void *send_request(char* send_file_path)
         // puts("Server replies :");
         // printf("%s",receive);
 
-        free(line);
-        line=malloc(1024);
     }
     char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type)+sizeof(int));
     sprintf(infoString,"%d_%d-%s|%s",sessionID,row,sort_value_type,SORT_REQUEST);
     write(currentSocket, infoString , strlen(infoString));
     fclose(input_file);
-    free(tmp_path);
-    free(infoString);
+
+
     pthread_mutex_unlock(&sort_lock);
+
     return NULL;
 }
 
@@ -160,8 +159,8 @@ int count_header(char* input_path){
               token = strtok_single(NULL, ",");
               value_type_number++;    // update the number of columns(value types).
           }
-          free(headerLine);
-          free(tmp);
+          // free(headerLine);
+          // free(tmp);
           break;
       }
     }
@@ -225,8 +224,7 @@ void *recur(void *arg_path){
       pthread_join(tidgroup[i],NULL);
     }
     closedir(dir);
-    //free(tmppath);
-    //return NULL;
+    return NULL;
 }
 
 void ifPathCorrect(char* path){
@@ -349,25 +347,23 @@ int main(int c, char *v[]){
       }
     }
 
-    char* tmpInitDir = strdup(initial_dir);
+    char* tmpInitDir = initial_dir;
     recur((void *)tmpInitDir);
 
-
+    pthread_mutex_lock(&sort_lock);
     printf("sent %d files\n",sentCounter);
     write(available_socket() , DUMP_REQUEST , strlen(DUMP_REQUEST));
+    pthread_mutex_unlock(&sort_lock);
 
     pthread_mutex_destroy(&path_lock);
     pthread_mutex_destroy(&threadlock);
     pthread_mutex_destroy(&csv_lock);
     pthread_mutex_destroy(&count_lock);
-    free(tmpInitDir);
     init=0;
     for(;init<poolSize;init++){
       close(socketpool[init]);
       //printf("%dth th socket Disconnected\n",init);
     }
     free(socketpool);
-    //close(sock);
-
     return 0;
 }
