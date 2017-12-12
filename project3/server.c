@@ -254,6 +254,7 @@ void *connection_handler(void *socket_desc){
           *(breakdown) = 0;
           int dataRow = atoi(row_str);
           int sessionID = atoi(copy);
+
           printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
 
           // store the number of rows of the current file into array
@@ -334,14 +335,11 @@ void *connection_handler(void *socket_desc){
             int col_count = 0;
             int outer_count = 0;
             for (; outer_count < dataRow-1; outer_count++){
-
               for (; col_count < 28; col_count++){
                 //printf("%s -------- %d\n", partial[sort_array[outer_count].index].str[col_count], partial[sort_array[outer_count].index].index);
                 //entire[entire_index].str[col_count] = malloc(strlen(partial[sort_array[outer_count].index].str[col_count])*sizeof(char));
                 //strcpy(entire[entire_index].str[col_count], partial[sort_array[outer_count].index].str[col_count]);
-                entire[entire_index].str[col_count] = partial[sort_array[outer_count].index].str[col_count];
-                printf("%s index:%d\n", entire[entire_index].str[col_count],entire_index);
-
+                entire[entire_index].str[col_count] = strdup(partial[sort_array[outer_count].index].str[col_count]);
               }
               entire[entire_index].index = entire_index;
               col_count = 0;
@@ -378,17 +376,56 @@ void *connection_handler(void *socket_desc){
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
+          // char* rowINFO =malloc(sizeof(int)+1);
+          // sprintf(rowINFO,"%d_rownumber\n",entire_index);
+          // write(sock,rowINFO,strlen(rowINFO));
+          /* store each sorted csv into the total csv */
+          int col_count = 0;
+          int outer_count = 0;
+          char* dumpContent=NULL;
+          for (; outer_count < entire_index; outer_count++){
+            if(outer_count%15==0){
+              dumpContent=malloc(2048*5);
+              strcpy(dumpContent,"");
+            }
+            for (; col_count < 28; col_count++){
+              if(col_count==27){
+                strcat(dumpContent,entire[outer_count].str[col_count]);
+              }
+              else{
+                strcat(strcat(dumpContent,entire[outer_count].str[col_count]),",");
+              }
+            }
+            strcat(dumpContent,"\n");
+            col_count = 0;
+            if((outer_count+1)==entire_index){
+              printf("rowindex:%d , %s\n",outer_count,dumpContent );
+              strcat(dumpContent,"FILE_INFO");
+              write(sock,dumpContent,strlen(dumpContent));
+              break;
+            }
+            if((outer_count+1)%15==0){
+              printf("rowindex:%d , %s\n",outer_count,dumpContent );
+              strcat(dumpContent,"FILE_INFO");
+              write(sock,dumpContent,strlen(dumpContent));
+              free(dumpContent);
+            }
+          }
+          free(dumpContent);
+          write(sock,"FINISH",strlen("FINISH"));
+
+
           int icount = 0;
           int j = 0;
           for(;icount<80000;icount++){
             free(entire[icount].str);
           }
           free(entire);
-
           index_partial=0;
           num_of_rows=0;
           printf("\ndump request\n");
-        } else {
+          break;
+        }else {
           char* tmpstr = strdup(sendback_message);
           char *token = strtok_single(tmpstr, ",");
           char * tempStr;
