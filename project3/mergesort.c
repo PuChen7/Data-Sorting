@@ -38,9 +38,11 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
 
     // temporary arrays
     SortArray *L;
-    L = (SortArray*) malloc(n1 * sizeof(SortArray));
+    if(n1>0)
+      L = (SortArray*) malloc(n1 * sizeof(SortArray));
     SortArray *R;
-    R = (SortArray*) malloc(n2 * sizeof(SortArray));
+    if(n2>0)
+      R = (SortArray*) malloc(n2 * sizeof(SortArray));
 
     // copy data into temporary arrays
     for (i = 0; i < n1; i++){
@@ -176,9 +178,10 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
         j++;
         k++;
     }
-
-    // free(L);
-    // free(R);
+    if(n1>0)
+      free(L);
+    if(n2>0)
+      free(R);
 
 }
 

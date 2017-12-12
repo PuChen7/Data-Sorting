@@ -218,38 +218,38 @@ void *connection_handler(void *socket_desc){
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
         if(strstr(sendback_message,SORT_REQUEST)==NULL){
-        // need to store header
-        if (strstr(sendback_message, "director_name") && head_flag == 0){
-              char* headtmp = strdup(sendback_message);
-              char* head_tok = strtok_single(headtmp, ",");
-              int head_count = 0;
-              while (head_tok != NULL){
-                header[head_count] = strdup(head_tok);
+              // need to store header
+              if (strstr(sendback_message, "director_name") && head_flag == 0){
+                    char* headtmp = strdup(sendback_message);
+                    char* head_tok = strtok_single(headtmp, ",");
+                    int head_count = 0;
+                    while (head_tok != NULL){
+                      header[head_count] = strdup(head_tok);
 
-                head_count++;
-                head_tok = strtok_single(NULL, ",");
-              }
-              head_flag = 1;
-              write(sock , sendback_message , strlen(sendback_message));
-              continue;
-            } else if (strstr(sendback_message, "director_name") && head_flag == 1){
-              write(sock , sendback_message , strlen(sendback_message));
-              continue;
-            }
+                      head_count++;
+                      head_tok = strtok_single(NULL, ",");
+                    }
+                    head_flag = 1;
+                    write(sock , sendback_message , strlen(sendback_message));
+                    continue;
+                  } else if (strstr(sendback_message, "director_name") && head_flag == 1){
+                    write(sock , sendback_message , strlen(sendback_message));
+                    continue;
+                  }
         }
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
 
-          char* copy = strdup(sendback_message);
+          char* copy = sendback_message;
           char *breakdown = strchr(copy, '|');
           if (!breakdown) /* deal with error: / not present" */;
           *(breakdown) = 0;
           breakdown = strchr(copy, '-');
-          char* sort_type = strdup(breakdown+1);
-          sort_value_type = strdup(sort_type);
+          char* sort_type = breakdown+1;
+          sort_value_type = sort_type;
           if (!breakdown) /* deal with error: / not present" */;
           *(breakdown) = 0;
           breakdown = strchr(copy, '_');
-          char* row_str = strdup(breakdown+1);
+          char* row_str = breakdown+1;
           if (!breakdown) /* deal with error: / not present" */;
           *(breakdown) = 0;
           int dataRow = atoi(row_str);
@@ -263,9 +263,9 @@ void *connection_handler(void *socket_desc){
           num_of_rows = num_of_rows + dataRow;
           num_of_files++;
             //
-            free(copy);
-            free(sort_type);
-            free(row_str);
+            //free(copy);
+            //free(sort_type);
+            //free(row_str);
 
             int print = 0;
             int print2 = 0;
@@ -340,7 +340,7 @@ void *connection_handler(void *socket_desc){
                 //entire[entire_index].str[col_count] = malloc(strlen(partial[sort_array[outer_count].index].str[col_count])*sizeof(char));
                 //strcpy(entire[entire_index].str[col_count], partial[sort_array[outer_count].index].str[col_count]);
                 entire[entire_index].str[col_count] = partial[sort_array[outer_count].index].str[col_count];
-                printf("%s\n", entire[entire_index].str[col_count]);
+                printf("%s index:%d\n", entire[entire_index].str[col_count],entire_index);
 
               }
               entire[entire_index].index = entire_index;
@@ -359,6 +359,7 @@ void *connection_handler(void *socket_desc){
           //     free(partial[freei].str);
           // }
 
+          sleep(0.5);
 
           int freei = 0;
           for(;freei<dataRow-1;freei++){
