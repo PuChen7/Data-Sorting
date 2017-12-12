@@ -8,7 +8,7 @@
 #include<pthread.h> //for threading , link with lpthread
 #define SESSION_MSG "session_msg"
 
-SortArray *entire;
+// SortArray *entire;
 
 
 int num_of_rows = 0;
@@ -89,15 +89,11 @@ int isConnecting(char* ip){//1 for true, 0 for false
 }
 int main(int argc , char *argv[])
   {
-
-
-
-
-    entire = malloc(80000 * sizeof(SortArray));
-    int i = 0;
-    for(;i<80000;i++){
-        entire[i].str = malloc(sizeof(char*)*28);
-    }
+    // entire = malloc(150000 * sizeof(SortArray));
+    // int i = 0;
+    // for(;i<150000;i++){
+    //     entire[i].str = malloc(sizeof(char*)*28);
+    // }
 
     sessionDict = (char**)malloc(sizeof (char*) * 1000);
     int socket_desc , new_socket , c , *new_sock;
@@ -164,8 +160,6 @@ int main(int argc , char *argv[])
         sessionDict[currentsessionID--]=NULL;
         sessionTotal--;
         pthread_mutex_unlock(&session_lock);
-
-
     }
 
     if (new_socket<0)
@@ -182,6 +176,18 @@ int main(int argc , char *argv[])
  * This will handle connection for each client
  * */
 void *connection_handler(void *socket_desc){
+
+
+    int printp = 0;
+
+    SortArray *entire;
+    entire = malloc(150000 * sizeof(SortArray));
+    int i = 0;
+    for(;i<150000;i++){
+        entire[i].str = malloc(sizeof(char*)*28);
+    }
+    int entire_index = 0;
+
     pthread_mutex_lock(&sort_lock);
     SortArray *partial;
     int index_partial = 0;
@@ -256,7 +262,6 @@ void *connection_handler(void *socket_desc){
           file_row[num_of_files] = dataRow;
           num_of_rows = num_of_rows + dataRow;
           num_of_files++;
-
             //
             free(copy);
             free(sort_type);
@@ -266,7 +271,6 @@ void *connection_handler(void *socket_desc){
             int print2 = 0;
             int flag = 0;
 
-
             //decide which column to sort
             int i = 0;
             for(; i < 28; i++){
@@ -274,7 +278,6 @@ void *connection_handler(void *socket_desc){
                 break;
               }
             }
-
 
             int sort_column = i;
             int file_count = 0;
@@ -321,13 +324,36 @@ void *connection_handler(void *socket_desc){
                   mergeSort(sort_array, 0, MAXROW-1,numeric);
               }
 
-          // int u = 0;
-          // for (; u < file_row[file_count]-1; u++){
-          //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
-          // }
-          //sleep(1);
+            // int u = 0;
+            // for (; u < dataRow-1; u++){
+            //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
+            // }
+            // sleep(1);
+
+            /* store each sorted csv into the total csv */
+            int col_count = 0;
+            int outer_count = 0;
+            for (; outer_count < dataRow-1; outer_count++){
+
+              for (; col_count < 28; col_count++){
+                //printf("%s -------- %d\n", partial[sort_array[outer_count].index].str[col_count], partial[sort_array[outer_count].index].index);
+                //entire[entire_index].str[col_count] = malloc(strlen(partial[sort_array[outer_count].index].str[col_count])*sizeof(char));
+                //strcpy(entire[entire_index].str[col_count], partial[sort_array[outer_count].index].str[col_count]);
+                entire[entire_index].str[col_count] = partial[sort_array[outer_count].index].str[col_count];
+                printf("%s\n", entire[entire_index].str[col_count]);
+
+              }
+              entire[entire_index].index = entire_index;
+              col_count = 0;
+              entire_index = entire_index + 1;
+            }
 
 
+
+            // for (; printp < entire_index; printp++){
+            //   printf("%s  --------------  %d\n",entire[printp].str, entire[printp].index);
+            // }
+            // printp = printp + dataRow - 1;
           // int freei = 0;
           // for(;freei<7000;freei++){
           //     free(partial[freei].str);
@@ -351,18 +377,14 @@ void *connection_handler(void *socket_desc){
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
-          int icount = 0;
-          int j = 0;
-          for(;icount<80000;icount++){
-            free(entire[icount].str);
-          }
-          free(entire);
+          // int icount = 0;
+          // int j = 0;
+          // for(;icount<80000;icount++){
+          //   free(entire[icount].str);
+          // }
+          // free(entire);
 
-          entire = malloc(80000 * sizeof(SortArray));
-          int i = 0;
-          for(;i<80000;i++){
-              entire[i].str = malloc(sizeof(char*)*28);
-          }
+
 
           index_partial=0;
           num_of_rows=0;
