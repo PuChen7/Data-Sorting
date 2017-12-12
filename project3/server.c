@@ -361,10 +361,10 @@ void *connection_handler(void *socket_desc){
 
           sleep(0.5);
 
-          int freei = 0;
-          for(;freei<dataRow-1;freei++){
-              free(sort_array[freei].str);
-          }
+          // int freei = 0;
+          // for(;freei<dataRow-1;freei++){
+          //     free(sort_array[freei].str);
+          // }
           free(sort_array);
           free(partial);
 
@@ -378,14 +378,12 @@ void *connection_handler(void *socket_desc){
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
-          // int icount = 0;
-          // int j = 0;
-          // for(;icount<80000;icount++){
-          //   free(entire[icount].str);
-          // }
-          // free(entire);
-
-
+          int icount = 0;
+          int j = 0;
+          for(;icount<80000;icount++){
+            free(entire[icount].str);
+          }
+          free(entire);
 
           index_partial=0;
           num_of_rows=0;
