@@ -367,7 +367,7 @@ int main(int c, char *v[]){
         break;
       }
       fprintf(output_file, "%s",server_message);
-      printf("server replies-------%s\n", server_message);
+      //printf("server replies-------%s\n", server_message);
 
     }
     fclose(output_file);

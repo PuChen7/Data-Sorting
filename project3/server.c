@@ -179,13 +179,22 @@ void *connection_handler(void *socket_desc){
 
 
     int printp = 0;
-
+    int total_row = 0;
+    int sort_column;
     SortArray *entire;
     entire = malloc(150000 * sizeof(SortArray));
     int i = 0;
     for(;i<150000;i++){
         entire[i].str = malloc(sizeof(char*)*28);
     }
+
+    SortArray *final_sorted;
+    final_sorted = malloc(150000 * sizeof(SortArray));
+    i = 0;
+    for(;i<150000;i++){
+        final_sorted[i].str = malloc(sizeof(char*)*28);
+    }
+
     int entire_index = 0;
 
     pthread_mutex_lock(&sort_lock);
@@ -255,6 +264,7 @@ void *connection_handler(void *socket_desc){
           int dataRow = atoi(row_str);
           int sessionID = atoi(copy);
 
+          total_row = total_row + dataRow - 1;
           printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
 
           // store the number of rows of the current file into array
@@ -280,7 +290,7 @@ void *connection_handler(void *socket_desc){
               }
             }
 
-            int sort_column = i;
+            sort_column = i;
             int file_count = 0;
             // first file should start at 1, second file start at 5046, third: 10091...
 
@@ -336,9 +346,7 @@ void *connection_handler(void *socket_desc){
             int outer_count = 0;
             for (; outer_count < dataRow-1; outer_count++){
               for (; col_count < 28; col_count++){
-                //printf("%s -------- %d\n", partial[sort_array[outer_count].index].str[col_count], partial[sort_array[outer_count].index].index);
-                //entire[entire_index].str[col_count] = malloc(strlen(partial[sort_array[outer_count].index].str[col_count])*sizeof(char));
-                //strcpy(entire[entire_index].str[col_count], partial[sort_array[outer_count].index].str[col_count]);
+
                 entire[entire_index].str[col_count] = strdup(partial[sort_array[outer_count].index].str[col_count]);
               }
               entire[entire_index].index = entire_index;
@@ -346,23 +354,9 @@ void *connection_handler(void *socket_desc){
               entire_index = entire_index + 1;
             }
 
-
-
-            // for (; printp < entire_index; printp++){
-            //   printf("%s  --------------  %d\n",entire[printp].str, entire[printp].index);
-            // }
-            // printp = printp + dataRow - 1;
-          // int freei = 0;
-          // for(;freei<7000;freei++){
-          //     free(partial[freei].str);
-          // }
-
           sleep(0.5);
 
-          // int freei = 0;
-          // for(;freei<dataRow-1;freei++){
-          //     free(sort_array[freei].str);
-          // }
+
           free(sort_array);
           free(partial);
 
@@ -376,10 +370,54 @@ void *connection_handler(void *socket_desc){
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
-          // char* rowINFO =malloc(sizeof(int)+1);
-          // sprintf(rowINFO,"%d_rownumber\n",entire_index);
-          // write(sock,rowINFO,strlen(rowINFO));
+
+          // sort all sorted files
+          SortArray *sort_array;
+          sort_array = (SortArray*) malloc(total_row * sizeof(SortArray));
+
+          int numericFlag = 0;
+          int count = 0;
+          int rowNumbers = 0;
+          while (rowNumbers < total_row){
+              sort_array[rowNumbers].index = entire[rowNumbers].index;
+              sort_array[rowNumbers].str = entire[rowNumbers].str[sort_column];
+              // printf("%s\n", sort_array[rowNumbers].str);
+              numericFlag += isNumeric(sort_array[rowNumbers].str);
+              rowNumbers++;
+          }
+          int numeric = numericFlag;
+
+          // if the string is a number, then sort based on the value of the number
+          // NOTE: numeric 0:false 1:true
+          int MAXROW=total_row;
+
+
+          if(MAXROW>=0){
+              mergeSort(sort_array, 0, MAXROW-1,numeric);
+          }
+
           /* store each sorted csv into the total csv */
+          int f_col = 0;
+          int f_outer = 0;
+          entire_index = 0;
+          for (; f_outer < total_row; f_outer++){
+            for (; f_col < 28; f_col++){
+              final_sorted[entire_index].str[f_col] = strdup(entire[sort_array[f_outer].index].str[f_col]);
+            }
+            final_sorted[entire_index].index = entire_index;
+            f_col = 0;
+            entire_index = entire_index + 1;
+          }
+
+
+          /************/
+          int head_print = 0;
+          for (; head_print < 28; head_print++){
+            printf("%s\t", header[head_print]);
+          }
+          printf("\n");
+
+
           int col_count = 0;
           int outer_count = 0;
           char* dumpContent=NULL;
@@ -390,22 +428,22 @@ void *connection_handler(void *socket_desc){
             }
             for (; col_count < 28; col_count++){
               if(col_count==27){
-                strcat(dumpContent,entire[outer_count].str[col_count]);
+                strcat(dumpContent,final_sorted[outer_count].str[col_count]);
               }
               else{
-                strcat(strcat(dumpContent,entire[outer_count].str[col_count]),",");
+                strcat(strcat(dumpContent,final_sorted[outer_count].str[col_count]),",");
               }
             }
             strcat(dumpContent,"\n");
             col_count = 0;
             if((outer_count+1)==entire_index){
-              printf("rowindex:%d , %s\n",outer_count,dumpContent );
+              //printf("rowindex:%d , %s\n",outer_count,dumpContent );
               strcat(dumpContent,"FILE_INFO");
               write(sock,dumpContent,strlen(dumpContent));
               break;
             }
             if((outer_count+1)%15==0){
-              printf("rowindex:%d , %s\n",outer_count,dumpContent );
+              //printf("rowindex:%d , %s\n",outer_count,dumpContent );
               strcat(dumpContent,"FILE_INFO");
               write(sock,dumpContent,strlen(dumpContent));
               free(dumpContent);
