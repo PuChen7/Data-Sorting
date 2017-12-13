@@ -93,9 +93,9 @@ void *send_request(char* send_file_path)
 
     int currentSocket = available_socket();
     sentCounter++;
-    char* line[1024];    // temp array for holding csv file lines.
+    char line[1024];    // temp array for holding csv file lines.
     char buf[1024];
-    char* receive[1024];
+    char receive[1024];
     int row = 0;
     while (fgets(line, 1024, input_file)){
         //printf("ready to sent strlen %d \n",strlen(line));
@@ -110,18 +110,19 @@ void *send_request(char* send_file_path)
             puts("recv failed");
             return 2;
         }
-
-        strcpy(receive,buf);
-        char *p = strchr(receive, '\n');
-        if (!p) /* deal with error: / not present" */;
-        *(p+1) = 0;
+        //
+        // strcpy(receive,buf);
+        // char *p = strchr(receive, '\n');
+        // if (!p) /* deal with error: / not present" */;
+        // *(p+1) = 0;
 
     }
+    pthread_mutex_unlock(&sort_lock);
+
     char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type)+sizeof(int));
     sprintf(infoString,"%d_%d-%s|%s",sessionID,row,sort_value_type,SORT_REQUEST);
     write(currentSocket, infoString , strlen(infoString));
     fclose(input_file);
-    pthread_mutex_unlock(&sort_lock);
 
     return NULL;
 }
@@ -354,10 +355,6 @@ int main(int c, char *v[]){
 
     int read_size;
     char server_message[2048*5];
-    // read_size = read(socketpool[0] , server_message , strlen("_rownumber\n")+sizeof(int) );
-    // if(strstr(server_message,"_rownumber\n"))
-    //     printf("%s\n",server_message );
-    int size=0;
     while( (read_size = read(socketpool[0] , server_message , 2048*5 )) > 0 ){
       if(strstr(server_message,"FILE_INFO")!=NULL){
         char* p = strstr(server_message,"FILE_INFO");
@@ -367,8 +364,7 @@ int main(int c, char *v[]){
         break;
       }
       fprintf(output_file, "%s",server_message);
-      //printf("server replies-------%s\n", server_message);
-
+      write(socketpool[0] , "FINISH" , strlen("FINISH"));
     }
     fclose(output_file);
     pthread_mutex_unlock(&sort_lock);

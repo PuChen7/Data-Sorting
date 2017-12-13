@@ -218,15 +218,16 @@ void *connection_handler(void *socket_desc){
     int head_flag = 0;
 
     while( (read_size = read(sock , client_message , 1024 )) > 0 ){
-
         //Send the message back to client
         strcpy(sendback_message,client_message);
+        printf("%s\n",sendback_message );
+
         char *p = strchr(sendback_message, '\n');
 
 
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
-        if(strstr(sendback_message,SORT_REQUEST)==NULL){
+        if(strstr(sendback_message,SORT_REQUEST)==NULL&&strstr(sendback_message,DUMP_REQUEST)==NULL){
               // need to store header
               if (strstr(sendback_message, "director_name") && head_flag == 0){
                     char* headtmp = strdup(sendback_message);
@@ -247,7 +248,6 @@ void *connection_handler(void *socket_desc){
                   }
         }
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
-
           char* copy = sendback_message;
           char *breakdown = strchr(copy, '|');
           if (!breakdown) /* deal with error: / not present" */;
@@ -370,7 +370,6 @@ void *connection_handler(void *socket_desc){
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
-
           // sort all sorted files
           SortArray *sort_array;
           sort_array = (SortArray*) malloc(total_row * sizeof(SortArray));
@@ -446,6 +445,8 @@ void *connection_handler(void *socket_desc){
               //printf("rowindex:%d , %s\n",outer_count,dumpContent );
               strcat(dumpContent,"FILE_INFO");
               write(sock,dumpContent,strlen(dumpContent));
+              char FINISH[7];
+              read(sock,FINISH,6);
               free(dumpContent);
             }
           }
