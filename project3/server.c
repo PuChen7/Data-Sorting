@@ -220,7 +220,6 @@ void *connection_handler(void *socket_desc){
     while( (read_size = read(sock , client_message , 1024 )) > 0 ){
         //Send the message back to client
         strcpy(sendback_message,client_message);
-        printf("%s\n",sendback_message );
 
         char *p = strchr(sendback_message, '\n');
 
@@ -265,7 +264,7 @@ void *connection_handler(void *socket_desc){
           int sessionID = atoi(copy);
 
           total_row = total_row + dataRow - 1;
-          printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
+          //printf("\nsort_request with search value type :%s,dataRow:%d,session:%d\n",sort_type,dataRow,sessionID);
 
           // store the number of rows of the current file into array
 
@@ -408,18 +407,29 @@ void *connection_handler(void *socket_desc){
             entire_index = entire_index + 1;
           }
 
+          char* dumpContent=NULL;
+          dumpContent=malloc(2048*5);
+          strcpy(dumpContent,"");
 
           /************/
           int head_print = 0;
           for (; head_print < 28; head_print++){
-            printf("%s\t", header[head_print]);
+            if(head_print==27){
+              strcat(dumpContent,header[head_print]);
+            }
+            else{
+              strcat(strcat(dumpContent,header[head_print]),",");
+            }
+            //printf("%s\t", );
           }
-          printf("\n");
-
+          strcat(dumpContent,"FILE_INFO");
+          write(sock,dumpContent,strlen(dumpContent));
+          char FINISH[7];
+          read(sock,FINISH,6);
+          free(dumpContent);
 
           int col_count = 0;
           int outer_count = 0;
-          char* dumpContent=NULL;
           for (; outer_count < entire_index; outer_count++){
             if(outer_count%15==0){
               dumpContent=malloc(2048*5);
@@ -439,13 +449,13 @@ void *connection_handler(void *socket_desc){
               //printf("rowindex:%d , %s\n",outer_count,dumpContent );
               strcat(dumpContent,"FILE_INFO");
               write(sock,dumpContent,strlen(dumpContent));
+              read(sock,FINISH,6);
               break;
             }
             if((outer_count+1)%15==0){
               //printf("rowindex:%d , %s\n",outer_count,dumpContent );
               strcat(dumpContent,"FILE_INFO");
               write(sock,dumpContent,strlen(dumpContent));
-              char FINISH[7];
               read(sock,FINISH,6);
               free(dumpContent);
             }
@@ -462,7 +472,7 @@ void *connection_handler(void *socket_desc){
           free(entire);
           index_partial=0;
           num_of_rows=0;
-          printf("\ndump request\n");
+          //printf("\ndump request\n");
           break;
         }else {
           char* tmpstr = strdup(sendback_message);
