@@ -44,6 +44,7 @@ pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
 char **final_sorted[50000];
 char thread_path[1000][300];
 int sentCounter=0;
+int sortFlag = 1;
 
 char *strtok_single (char * str, char const * delims) {
     static char  * src = NULL;
@@ -70,7 +71,7 @@ int available_socket(){
   int start = 0;
   int writeVal = 0;
   for(;start<poolSize;start++){
-    writeVal=write(socketpool[start] , "" , strlen(""));
+    //writeVal=write(socketpool[start] , "" , strlen(""));
     if(writeVal>=0)return socketpool[start];
   }
   //need tell the thread to sleep
@@ -79,7 +80,6 @@ int available_socket(){
 
 void *send_request(char* send_file_path)
 {
-    pthread_mutex_lock(&sort_lock);
     char* tmp_path=strdup(send_file_path);
 
     FILE    *input_file = fopen(tmp_path, "r");
@@ -90,7 +90,7 @@ void *send_request(char* send_file_path)
         fclose(input_file);
         return NULL;
     }
-
+    pthread_mutex_lock(&sort_lock);
     int currentSocket = available_socket();
     sentCounter++;
     char line[1024];    // temp array for holding csv file lines.
@@ -140,11 +140,16 @@ int count_header(char* input_path){
   int value_type_number;
   char * headerLine=NULL;
   char line[1024];
+  int sorttypeFlag=0;
   while (fgets(line, 1024, input_file)){
       char* tmp = strdup(line);
       char *token = strtok_single(tmp, ",");
       if(rowNumber==0){
           headerLine = strdup(line);
+          //check if sort type exist
+          if(strstr(token,sort_value_type)!=NULL){
+            sorttypeFlag=1;
+          }
           value_type_number = 0;
           while (token != NULL){
               if(token[strlen(token)-1] == '\n'){
@@ -156,6 +161,10 @@ int count_header(char* input_path){
           }
           // free(headerLine);
           // free(tmp);
+          if(sorttypeFlag==0){
+            printf("invalid sorttype\n");
+            return -1;
+          }
           break;
       }
     }
@@ -203,11 +212,17 @@ void *recur(void *arg_path){
             char headerfile[200];
             strcpy(headerfile,tmp_path);
             int flag=0;
-            if(count_header(headerfile)==28){
+            int headCounter=count_header(headerfile);
+            if(headCounter==28){
               flag =1 ;
             }
+            else if(headCounter==-1){
+              sortFlag=0;
+              pthread_mutex_unlock(&sort_lock);
+              break;
+            }
             pthread_mutex_unlock(&sort_lock);
-            if(flag){
+            if(flag&&sortFlag!=0){
               pthread_create(&tidgroup[tidlocalindex++], NULL, (void *)&send_request, (void *)tmp_path);
             }
             continue;
@@ -344,29 +359,31 @@ int main(int c, char *v[]){
 
     char* tmpInitDir = initial_dir;
     recur((void *)tmpInitDir);
-
+    char *cat_tmp = NULL;
     pthread_mutex_lock(&sort_lock);
-    char *cat_tmp = malloc(sizeof(char)*200);
-    strcpy(cat_tmp, "/AllFiles-sorted-<");
-    strcat(strcat(cat_tmp, sort_value_type),">.csv");
-    strcat(output_path, cat_tmp);
-    FILE *output_file = fopen(output_path, "w");
-    write(socketpool[0] , DUMP_REQUEST , strlen(DUMP_REQUEST));
+    if(sortFlag!=0){//if sort type is invalid no file created
+            cat_tmp = malloc(sizeof(char)*200);
+            strcpy(cat_tmp, "/AllFiles-sorted-<");
+            strcat(strcat(cat_tmp, sort_value_type),">.csv");
+            strcat(output_path, cat_tmp);
+            FILE *output_file = fopen(output_path, "w");
+            write(available_socket() , DUMP_REQUEST , strlen(DUMP_REQUEST));
 
-    int read_size;
-    char server_message[2048*5];
-    while( (read_size = read(socketpool[0] , server_message , 2048*5 )) > 0 ){
-      if(strstr(server_message,"FILE_INFO")!=NULL){
-        char* p = strstr(server_message,"FILE_INFO");
-        *p = 0;
-      }
-      if(strstr(server_message,"FINISH")!=NULL){
-        break;
-      }
-      fprintf(output_file, "%s",server_message);
-      write(socketpool[0] , "FINISH" , strlen("FINISH"));
+            int read_size;
+            char server_message[2048*5];
+            while( (read_size = read(available_socket() , server_message , 2048*5 )) > 0 ){
+              if(strstr(server_message,"FILE_INFO")!=NULL){
+                char* p = strstr(server_message,"FILE_INFO");
+                *p = 0;
+              }
+              if(strstr(server_message,"FINISH")!=NULL){
+                break;
+              }
+              fprintf(output_file, "%s",server_message);
+              write(available_socket() , "FINISH" , strlen("FINISH"));
+            }
+            fclose(output_file);
     }
-    fclose(output_file);
     pthread_mutex_unlock(&sort_lock);
 
     pthread_mutex_destroy(&path_lock);
