@@ -95,11 +95,15 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
               char* str2_ptr = str2;
 
               int index = 0;
-              while (index<str1_len1 && index<str2_len2 && str1_ptr[0] != str2_ptr[0]){
-                if ((int)str1_ptr[index] != (int)str2_ptr[index]){break;}
+              while (index<str1_len1 && index<str2_len2  ){
+		if(str1_ptr[0] == str2_ptr[0]){
+		index++;
+		}                
+		if ((int)str1_ptr[index] != (int)str2_ptr[index]){break;}
                 index++;
                 str1_len1--;
                 str2_len2--;
+
               }
               int range_of_str1 = getRangeofString(str1_ptr[index]);
               int range_of_str2 = getRangeofString(str2_ptr[index]);
@@ -115,12 +119,15 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
                   if ((int)str1_ptr[index] != (int)str2_ptr[index]){  // the original is NOT equal
                     if ((int)str1_ptr[index] - (int)str2_ptr[index] > 0){cmpResult=0;}
                     else{cmpResult=-1;}
-                  }
+                  }else{
+			
+		}
                 } else {
-		  printf("%s--%c vs %s--%c\n",str1_ptr,str1_char,str2_ptr,str2_char);
+
                   if (str1_char < str2_char){cmpResult = -1;}   // str1 < str2
                   else{cmpResult=0;}
                 }
+
               }
 
               // if str1 and str2 are in the SAME range, then determine based on own values
@@ -129,6 +136,7 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
                   if ((int)str1_ptr[index] <= (int)str2_ptr[index]){
 
                     cmpResult = -1;   // * -1 indicates the str1 is less than or equal to str2 (<=)
+
                   }
               } else {
                   //printf("str1 %s %d, str2 %s %d\n", L[i].str, range_of_str1, R[j].str, range_of_str2);
