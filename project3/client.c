@@ -345,7 +345,6 @@ int main(int c, char *v[]){
     char* tmpInitDir = initial_dir;
     recur((void *)tmpInitDir);
 
-    pthread_mutex_lock(&sort_lock);
     char *cat_tmp = malloc(sizeof(char)*200);
     strcpy(cat_tmp, "/AllFiles-sorted-<");
     strcat(strcat(cat_tmp, sort_value_type),">.csv");
@@ -355,12 +354,16 @@ int main(int c, char *v[]){
 
     int read_size;
     char server_message[2048*5];
+    pthread_mutex_lock(&sort_lock);
     while( (read_size = read(socketpool[0] , server_message , 2048*5 )) > 0 ){
+      printf("%s\n",server_message );
       if(strstr(server_message,"FILE_INFO")!=NULL){
         char* p = strstr(server_message,"FILE_INFO");
         *p = 0;
       }
       if(strstr(server_message,"FINISH")!=NULL){
+        printf("%s\n",server_message );
+        write(socketpool[0] , "FINISH" , strlen("FINISH"));
         break;
       }
       fprintf(output_file, "%s",server_message);
