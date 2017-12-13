@@ -251,6 +251,7 @@ void *connection_handler(void *socket_desc){
                   }
         }
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
+	  printf("sort request like %s",sendback_message);
           char* copy = sendback_message;
           char *breakdown = strchr(copy, '|');
           if (!breakdown) /* deal with error: / not present" */;
@@ -339,11 +340,6 @@ void *connection_handler(void *socket_desc){
                   mergeSort(sort_array, 0, MAXROW-1,numeric);
               }
 
-            // int u = 0;
-            // for (; u < dataRow-1; u++){
-            //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
-            // }
-            // sleep(1);
 
             /* store each sorted csv into the total csv */
             int col_count = 0;
@@ -375,6 +371,7 @@ void *connection_handler(void *socket_desc){
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
+	  printf("dump request like %s",sendback_message);
           // sort all sorted files
           SortArray *sort_array;
           sort_array = (SortArray*) malloc(total_row * sizeof(SortArray));
@@ -406,7 +403,7 @@ void *connection_handler(void *socket_desc){
           entire_index = 0;
           for (; f_outer < total_row; f_outer++){
             for (; f_col < 28; f_col++){
-              final_sorted[entire_index].str[f_col] = strdup(entire[sort_array[f_outer].index].str[f_col]);
+              final_sorted[entire_index].str[f_col] = entire[sort_array[f_outer].index].str[f_col];
             }
             final_sorted[entire_index].index = entire_index;
             f_col = 0;
