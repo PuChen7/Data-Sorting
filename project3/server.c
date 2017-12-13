@@ -130,6 +130,7 @@ int main(int argc , char *argv[])
     {
         char clntName[INET_ADDRSTRLEN];
         if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
+          pthread_mutex_lock(&session_lock);
            if(!isConnecting(clntName)){
               printf("%s,",clntName);
               char* sessionMSG = malloc(sizeof (int)+sizeof (SESSION_MSG));
@@ -139,6 +140,8 @@ int main(int argc , char *argv[])
               sessionTotal = currentsessionID;
               free(sessionMSG);
             }
+            pthread_mutex_unlock(&session_lock);
+
         } else {
            printf("Unable to get address\n"); // i just fixed this to printf .. i had it as print before
         }        //Reply to the client
@@ -197,7 +200,6 @@ void *connection_handler(void *socket_desc){
 
     int entire_index = 0;
 
-    pthread_mutex_lock(&sort_lock);
     SortArray *partial;
     int index_partial = 0;
     partial = malloc(7000 * sizeof(SortArray));
@@ -216,13 +218,11 @@ void *connection_handler(void *socket_desc){
     char client_message[1024];
     char sendback_message[1024];
     int head_flag = 0;
-
-    while( (read_size = read(sock , client_message , 1024 )) > 0 ){
+    while((read_size = read(sock , client_message , 1024 )) > 0 ){
         //Send the message back to client
+
         strcpy(sendback_message,client_message);
-
         char *p = strchr(sendback_message, '\n');
-
 
         if (!p) /* deal with error: / not present" */;
         *(p+1) = 0;
@@ -240,13 +240,18 @@ void *connection_handler(void *socket_desc){
                     }
                     head_flag = 1;
                     write(sock , sendback_message , strlen(sendback_message));
+                    char SIGN[7];
+                    read(sock,SIGN,6);
                     continue;
                   } else if (strstr(sendback_message, "director_name") && head_flag == 1){
                     write(sock , sendback_message , strlen(sendback_message));
+                    char SIGN[7];
+                    read(sock,SIGN,6);
                     continue;
                   }
         }
         if(strstr(sendback_message,SORT_REQUEST)!=NULL){
+	  printf("sort request like %s",sendback_message);
           char* copy = sendback_message;
           char *breakdown = strchr(copy, '|');
           if (!breakdown) /* deal with error: / not present" */;
@@ -272,6 +277,7 @@ void *connection_handler(void *socket_desc){
           file_row[num_of_files] = dataRow;
           num_of_rows = num_of_rows + dataRow;
           num_of_files++;
+
             //
             //free(copy);
             //free(sort_type);
@@ -334,11 +340,6 @@ void *connection_handler(void *socket_desc){
                   mergeSort(sort_array, 0, MAXROW-1,numeric);
               }
 
-            // int u = 0;
-            // for (; u < dataRow-1; u++){
-            //   printf("%s  --------------  %d\n", sort_array[u].str, sort_array[u].index);
-            // }
-            // sleep(1);
 
             /* store each sorted csv into the total csv */
             int col_count = 0;
@@ -353,7 +354,6 @@ void *connection_handler(void *socket_desc){
               entire_index = entire_index + 1;
             }
 
-          sleep(0.5);
 
 
           free(sort_array);
@@ -366,9 +366,12 @@ void *connection_handler(void *socket_desc){
           }
           file_count++;
           index_partial=0;
+          char SIGN[7];
+          write(sock,"SIGN",strlen("SIGN"));
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){
+	  printf("dump request like %s",sendback_message);
           // sort all sorted files
           SortArray *sort_array;
           sort_array = (SortArray*) malloc(total_row * sizeof(SortArray));
@@ -400,7 +403,7 @@ void *connection_handler(void *socket_desc){
           entire_index = 0;
           for (; f_outer < total_row; f_outer++){
             for (; f_col < 28; f_col++){
-              final_sorted[entire_index].str[f_col] = strdup(entire[sort_array[f_outer].index].str[f_col]);
+              final_sorted[entire_index].str[f_col] = entire[sort_array[f_outer].index].str[f_col];
             }
             final_sorted[entire_index].index = entire_index;
             f_col = 0;
@@ -449,20 +452,20 @@ void *connection_handler(void *socket_desc){
               //printf("rowindex:%d , %s\n",outer_count,dumpContent );
               strcat(dumpContent,"FILE_INFO");
               write(sock,dumpContent,strlen(dumpContent));
-              read(sock,FINISH,6);
+              char FIN[7];
+              read(sock,FIN,6);
               break;
             }
             if((outer_count+1)%15==0){
               //printf("rowindex:%d , %s\n",outer_count,dumpContent );
               strcat(dumpContent,"FILE_INFO");
               write(sock,dumpContent,strlen(dumpContent));
-              read(sock,FINISH,6);
+              char FIN[7];
+              read(sock,FIN,6);
               free(dumpContent);
             }
           }
           free(dumpContent);
-          write(sock,"FINISH",strlen("FINISH"));
-
 
           int icount = 0;
           int j = 0;
@@ -472,7 +475,10 @@ void *connection_handler(void *socket_desc){
           free(entire);
           index_partial=0;
           num_of_rows=0;
-          //printf("\ndump request\n");
+          printf("\ndump request\n");
+          write(sock,"FINISH",strlen("FINISH"));
+          char FIN[7];
+          read(sock,FIN,6);
           break;
         }else {
           char* tmpstr = strdup(sendback_message);
@@ -535,19 +541,20 @@ void *connection_handler(void *socket_desc){
 
         }
         write(sock , sendback_message , strlen(sendback_message));
+        char SIGN[7];
+        read(sock,SIGN,6);
     }
 
     if(read_size == 0)
     {
-        //puts("Client disconnected");
+        puts("Client disconnected");
         fflush(stdout);
     }
     else if(read_size == -1)
     {
         perror("recv failed");
     }
-
-    pthread_mutex_unlock(&sort_lock);
+    puts("Server  disconnected");
     //Free the socket pointer
     free(socket_desc);
 

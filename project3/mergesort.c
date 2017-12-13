@@ -4,8 +4,7 @@
 #include <ctype.h>
 #include "sorter.h"
 #define EMPTY_STRING ""
-#define SORT_REQUEST "sort_request\n"
-#define DUMP_REQUEST "dump_request\n"
+
 
 /* Function for locating the range of the first letter of the string
    There are 4 ranges based on ASCII values.
@@ -63,7 +62,7 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
         if(numeric!=0){ //if str
             int len1 = strlen(L[i].str);
             int len2 = strlen(R[j].str);
-
+	    printf("%s vs %s\n",L[i].str,R[j].str);
             if (len1 == 0 || len2 == 0){
               if (len1 == 0){cmpResult = -1;}
               else {cmpResult = 0;}
@@ -71,8 +70,8 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
               // trim ""
               int trim_len1 = 0;
               int trim_len2 = 0;
-              char str1[len1];
-              char str2[len2];
+              char* str1[len1];
+              char* str2[len2];
               int iterator = 0;
               for (; trim_len1<len1; trim_len1++){
                 if (L[i].str[trim_len1] != '"'){
@@ -94,13 +93,16 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
               char* str1_ptr = str1;
               char* str2_ptr = str2;
 
-
               int index = 0;
-              while (index<str1_len1 && index<str2_len2 && str1_ptr[0] != str2_ptr[0]){
-                if ((int)str1_ptr[index] != (int)str2_ptr[index]){break;}
+              while (index<str1_len1 && index<str2_len2  ){
+		if(str1_ptr[0] == str2_ptr[0]){
+		index++;
+		}
+		if ((int)str1_ptr[index] != (int)str2_ptr[index]){break;}
                 index++;
                 str1_len1--;
                 str2_len2--;
+
               }
               int range_of_str1 = getRangeofString(str1_ptr[index]);
               int range_of_str2 = getRangeofString(str2_ptr[index]);
@@ -116,11 +118,15 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
                   if ((int)str1_ptr[index] != (int)str2_ptr[index]){  // the original is NOT equal
                     if ((int)str1_ptr[index] - (int)str2_ptr[index] > 0){cmpResult=0;}
                     else{cmpResult=-1;}
-                  }
+                  }else{
+
+		}
                 } else {
+
                   if (str1_char < str2_char){cmpResult = -1;}   // str1 < str2
                   else{cmpResult=0;}
                 }
+
               }
 
               // if str1 and str2 are in the SAME range, then determine based on own values
@@ -129,6 +135,7 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
                   if ((int)str1_ptr[index] <= (int)str2_ptr[index]){
 
                     cmpResult = -1;   // * -1 indicates the str1 is less than or equal to str2 (<=)
+
                   }
               } else {
                   //printf("str1 %s %d, str2 %s %d\n", L[i].str, range_of_str1, R[j].str, range_of_str2);
