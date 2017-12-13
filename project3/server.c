@@ -370,6 +370,8 @@ void *connection_handler(void *socket_desc){
           }
           file_count++;
           index_partial=0;
+          char SIGN[7];
+          write(sock,"SIGN",strlen("SIGN"));
           continue;
         }
         else if(strstr(sendback_message,DUMP_REQUEST)!=NULL){

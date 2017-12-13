@@ -111,7 +111,7 @@ void *send_request(char* send_file_path)
     while (fgets(line, 1024, input_file)){
         //printf("ready to sent strlen %d \n",strlen(line));
         row++;
-        printf("before write session\n" );
+        // printf("before write session\n" );
         if(write(currentSocket, line , strlen(line) ) < 0)
         {
             puts("Send failed");
@@ -120,7 +120,7 @@ void *send_request(char* send_file_path)
             pthread_mutex_unlock(&sort_lock);
             return 1;
         }
-        printf("after write session\n" );
+        // printf("after write session\n" );
         if(read(currentSocket, buf , 1024) < 0)
         {
             puts("recv failed");
@@ -129,7 +129,8 @@ void *send_request(char* send_file_path)
             pthread_mutex_unlock(&sort_lock);
             return 2;
         }
-        printf("after read session\n" );
+        write(currentSocket, "FIN" , strlen("FIN"));
+        // printf("after read session\n" );
 
         //
         // strcpy(receive,buf);
@@ -143,6 +144,9 @@ void *send_request(char* send_file_path)
     char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type)+sizeof(int));
     sprintf(infoString,"%d_%d-%s|%s",sessionID,row,sort_value_type,SORT_REQUEST);
     write(currentSocket, infoString , strlen(infoString));
+    char SIGN[7];
+    read(currentSocket, SIGN , 6);
+    // printf("after read sort request\n" );
     fclose(input_file);
     poolUitl[currentSocketIndex]=0;
     pthread_cond_signal(&cond);
@@ -383,13 +387,13 @@ int main(int c, char *v[]){
     char server_message[2048*5];
     pthread_mutex_lock(&sort_lock);
     while( (read_size = read(socketpool[available_Socket] , server_message , 2048*5 )) > 0 ){
-      printf("%s\n",server_message );
+      // printf("%s\n",server_message );
       if(strstr(server_message,"FILE_INFO")!=NULL){
         char* p = strstr(server_message,"FILE_INFO");
         *p = 0;
       }
       if(strstr(server_message,"FINISH")!=NULL){
-        printf("%s\n",server_message );
+        // printf("%s\n",server_message );
         write(socketpool[available_Socket] , "FINISH" , strlen("FINISH"));
         break;
       }
