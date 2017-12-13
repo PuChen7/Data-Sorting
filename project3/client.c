@@ -33,6 +33,8 @@ int sessionID;
 //socket pool
 int poolSize=0;
 int* socketpool;
+int* poolUitl;//0 stands for available , 1 stands for using right now
+
 //global
 char* sort_value_type;
 pthread_mutex_t path_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -40,6 +42,8 @@ pthread_mutex_t threadlock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t csv_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sort_lock = PTHREAD_MUTEX_INITIALIZER;
+//cond var
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 char **final_sorted[50000];
 char thread_path[1000][300];
@@ -69,9 +73,15 @@ char *strtok_single (char * str, char const * delims) {
 int available_socket(){
   int start = 0;
   int writeVal = 0;
-  for(;start<poolSize;start++){
-    writeVal=write(socketpool[start] , "" , strlen(""));
-    if(writeVal>=0)return socketpool[start];
+  while(1){
+    for(;start<poolSize;start++){
+      if(poolUitl[start]==0){
+        poolUitl[start]=1;
+        return start;
+      }
+    }
+    // nothing available
+    pthread_cond_wait(&cond,&sort_lock);
   }
   //need tell the thread to sleep
   //wake it up until there is available one
@@ -91,7 +101,8 @@ void *send_request(char* send_file_path)
         return NULL;
     }
 
-    int currentSocket = available_socket();
+    int currentSocketIndex =available_socket();
+    int currentSocket = socketpool[currentSocketIndex];
     sentCounter++;
     char line[1024];    // temp array for holding csv file lines.
     char buf[1024];
@@ -100,16 +111,26 @@ void *send_request(char* send_file_path)
     while (fgets(line, 1024, input_file)){
         //printf("ready to sent strlen %d \n",strlen(line));
         row++;
+        printf("before write session\n" );
         if(write(currentSocket, line , strlen(line) ) < 0)
         {
             puts("Send failed");
+            poolUitl[currentSocketIndex]=0;
+            pthread_cond_signal(&cond);
+            pthread_mutex_unlock(&sort_lock);
             return 1;
         }
+        printf("after write session\n" );
         if(read(currentSocket, buf , 1024) < 0)
         {
             puts("recv failed");
+            poolUitl[currentSocketIndex]=0;
+            pthread_cond_signal(&cond);
+            pthread_mutex_unlock(&sort_lock);
             return 2;
         }
+        printf("after read session\n" );
+
         //
         // strcpy(receive,buf);
         // char *p = strchr(receive, '\n');
@@ -117,13 +138,15 @@ void *send_request(char* send_file_path)
         // *(p+1) = 0;
 
     }
-    pthread_mutex_unlock(&sort_lock);
+
 
     char* infoString = malloc(sizeof(SORT_REQUEST)+sizeof(sort_value_type)+sizeof(int));
     sprintf(infoString,"%d_%d-%s|%s",sessionID,row,sort_value_type,SORT_REQUEST);
     write(currentSocket, infoString , strlen(infoString));
     fclose(input_file);
-
+    poolUitl[currentSocketIndex]=0;
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&sort_lock);
     return NULL;
 }
 
@@ -318,11 +341,13 @@ int main(int c, char *v[]){
     //NOTE v8 : poolsize
     poolSize=atoi(v[8]);//socket pool number
     socketpool=calloc(poolSize,sizeof *socketpool);
+    poolUitl=calloc(poolSize,sizeof *socketpool);
     int init=0;
     char sessionMSG[20];
     for(;init<poolSize;init++){
       //Create socket
       socketpool[init] = socket(AF_INET , SOCK_STREAM , 0);
+      poolUitl[init] = 0;
       if (socketpool[init] == -1)
       {
           printf("Could not create socket");
@@ -350,12 +375,14 @@ int main(int c, char *v[]){
     strcat(strcat(cat_tmp, sort_value_type),">.csv");
     strcat(output_path, cat_tmp);
     FILE *output_file = fopen(output_path, "w");
-    write(socketpool[0] , DUMP_REQUEST , strlen(DUMP_REQUEST));
+    int available_Socket=available_socket();
+
+    write(socketpool[available_Socket] , DUMP_REQUEST , strlen(DUMP_REQUEST));
 
     int read_size;
     char server_message[2048*5];
     pthread_mutex_lock(&sort_lock);
-    while( (read_size = read(socketpool[0] , server_message , 2048*5 )) > 0 ){
+    while( (read_size = read(socketpool[available_Socket] , server_message , 2048*5 )) > 0 ){
       printf("%s\n",server_message );
       if(strstr(server_message,"FILE_INFO")!=NULL){
         char* p = strstr(server_message,"FILE_INFO");
@@ -363,12 +390,14 @@ int main(int c, char *v[]){
       }
       if(strstr(server_message,"FINISH")!=NULL){
         printf("%s\n",server_message );
-        write(socketpool[0] , "FINISH" , strlen("FINISH"));
+        write(socketpool[available_Socket] , "FINISH" , strlen("FINISH"));
         break;
       }
       fprintf(output_file, "%s",server_message);
-      write(socketpool[0] , "FINISH" , strlen("FINISH"));
+      write(socketpool[available_Socket] , "FINISH" , strlen("FINISH"));
     }
+    poolUitl[available_Socket]=0;
+    pthread_cond_signal(&cond);
     fclose(output_file);
     pthread_mutex_unlock(&sort_lock);
 

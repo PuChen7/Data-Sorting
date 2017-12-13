@@ -240,9 +240,13 @@ void *connection_handler(void *socket_desc){
                     }
                     head_flag = 1;
                     write(sock , sendback_message , strlen(sendback_message));
+                    char SIGN[7];
+                    read(sock,SIGN,6);
                     continue;
                   } else if (strstr(sendback_message, "director_name") && head_flag == 1){
                     write(sock , sendback_message , strlen(sendback_message));
+                    char SIGN[7];
+                    read(sock,SIGN,6);
                     continue;
                   }
         }
@@ -538,6 +542,8 @@ void *connection_handler(void *socket_desc){
 
         }
         write(sock , sendback_message , strlen(sendback_message));
+        char SIGN[7];
+        read(sock,SIGN,6);
     }
 
     if(read_size == 0)
