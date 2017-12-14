@@ -392,9 +392,7 @@ int main(int c, char *v[]){
         char* p = strstr(server_message,"FILE_INFO");
         *p = 0;
 	anotherHalf = p+strlen("FILE_INFO");
-      }
-printf("%s\n",server_message );  
-printf("--->%s\n",anotherHalf );  
+      } 
      if(strstr(server_message,"FINISH")!=NULL){
 
         write(socketpool[available_Socket] , "FINISH" , strlen("FINISH"));
