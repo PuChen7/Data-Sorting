@@ -384,11 +384,11 @@ int main(int c, char *v[]){
     write(socketpool[available_Socket] , DUMP_REQUEST , strlen(DUMP_REQUEST));
 
     int read_size;
-    char server_message[6000];
+    char server_message[1024];
     pthread_mutex_lock(&sort_lock);
-    while( (read_size = read(socketpool[available_Socket] , server_message , 6000 )) > 0 ){
-      if(strstr(server_message,"FILE_INFO\n")!=NULL){
-        char* p = strstr(server_message,"FILE_INFO\n");
+    while( (read_size = read(socketpool[available_Socket] , server_message , 1024 )) > 0 ){
+      if(strstr(server_message,"FILE_INFO")!=NULL){
+        char* p = strstr(server_message,"FILE_INFO");
         *p = 0;
       }
       printf("%s\n",server_message );
