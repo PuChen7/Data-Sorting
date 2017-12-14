@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "sorter.h"
+#include "sorter_server.h"
 #define EMPTY_STRING ""
 #define SORT_REQUEST "sort_request\n"
 #define DUMP_REQUEST "dump_request\n"
