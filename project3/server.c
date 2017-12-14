@@ -466,6 +466,9 @@ void *connection_handler(void *socket_desc){
             }
           }
           free(dumpContent);
+          write(sock,"FINISH",strlen("FINISH"));
+          char FIN[7];
+          read(sock,FIN,6);
 
           int icount = 0;
           int j = 0;
@@ -476,9 +479,7 @@ void *connection_handler(void *socket_desc){
           index_partial=0;
           num_of_rows=0;
           printf("\ndump request\n");
-          write(sock,"FINISH",strlen("FINISH"));
-          char FIN[7];
-          read(sock,FIN,6);
+
           break;
         }else {
           char* tmpstr = strdup(sendback_message);
