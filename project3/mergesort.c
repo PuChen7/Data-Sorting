@@ -63,7 +63,7 @@ void merge(SortArray* sort_array, int left, int middle, int right,int numeric){
         if(numeric!=0){ //if str
             int len1 = strlen(L[i].str);
             int len2 = strlen(R[j].str);
-	    printf("%s vs %s\n",L[i].str,R[j].str);
+	    //printf("%s vs %s\n",L[i].str,R[j].str);
             if (len1 == 0 || len2 == 0){
               if (len1 == 0){cmpResult = -1;}
               else {cmpResult = 0;}

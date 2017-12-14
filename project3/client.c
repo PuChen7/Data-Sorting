@@ -387,18 +387,28 @@ int main(int c, char *v[]){
     char server_message[1024];
     pthread_mutex_lock(&sort_lock);
     while( (read_size = read(socketpool[available_Socket] , server_message , 1024 )) > 0 ){
-      if(strstr(server_message,"FILE_INFO")!=NULL){
+     char *anotherHalf;
+     if(strstr(server_message,"FILE_INFO")!=NULL){
         char* p = strstr(server_message,"FILE_INFO");
         *p = 0;
+	anotherHalf = p+strlen("FILE_INFO");
       }
-      printf("%s\n",server_message );
-      if(strstr(server_message,"FINISH")!=NULL){
-        // printf("%s\n",server_message );
+printf("%s\n",server_message );  
+printf("--->%s\n",anotherHalf );  
+     if(strstr(server_message,"FINISH")!=NULL){
+
         write(socketpool[available_Socket] , "FINISH" , strlen("FINISH"));
         break;
-      }
+      }  
+
       fprintf(output_file, "%s",server_message);
       write(socketpool[available_Socket] , "FINISH" , strlen("FINISH"));
+      if(strstr(anotherHalf,"FINISH")!=NULL){
+	printf("%s\n",server_message );
+        write(socketpool[available_Socket] , "FINISH" , strlen("FINISH"));
+        break;
+	}
+
     }
     poolUitl[available_Socket]=0;
     pthread_cond_signal(&cond);

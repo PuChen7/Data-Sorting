@@ -124,7 +124,7 @@ int main(int argc , char *argv[])
     listen(socket_desc , 128);
 
     //Accept and incoming connection
-    printf("Received connections from: ");
+
     c = sizeof(server);
     while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
@@ -132,7 +132,8 @@ int main(int argc , char *argv[])
         if(inet_ntop(AF_INET,&client.sin_addr.s_addr,clntName,sizeof(clntName))!=NULL){
           pthread_mutex_lock(&session_lock);
            if(!isConnecting(clntName)){
-              printf("%s,",clntName);
+    	      printf("Received connections from: ");
+              printf("%s\n",clntName);
               char* sessionMSG = malloc(sizeof (int)+sizeof (SESSION_MSG));
               sprintf(sessionMSG,"%d-%s",currentsessionID,SESSION_MSG);
               write(new_socket,sessionMSG,strlen(sessionMSG));
@@ -454,9 +455,6 @@ void *connection_handler(void *socket_desc){
               write(sock,dumpContent,strlen(dumpContent));
               char FIN[7];
               read(sock,FIN,6);
-		  write(sock,"FINISH",strlen("FINISH"));
-		  char FIN[7];
-		  read(sock,FIN,6);
               break;
             }
             if((outer_count+1)%2==0){
@@ -469,7 +467,10 @@ void *connection_handler(void *socket_desc){
             }
           }
           free(dumpContent);
+              char FIN[7];
+		  write(sock,"FINISH",strlen("FINISH"));
 
+		  read(sock,FIN,6);
 
           int icount = 0;
           int j = 0;
@@ -556,7 +557,6 @@ void *connection_handler(void *socket_desc){
     {
         perror("recv failed");
     }
-    puts("Server  disconnected");
     //Free the socket pointer
     free(socket_desc);
 
