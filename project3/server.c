@@ -411,7 +411,7 @@ void *connection_handler(void *socket_desc){
           }
 
           char* dumpContent=NULL;
-          dumpContent=malloc(2048*5);
+          dumpContent=malloc(6000);
           strcpy(dumpContent,"");
 
           /************/
@@ -425,7 +425,7 @@ void *connection_handler(void *socket_desc){
             }
             //printf("%s\t", );
           }
-          strcat(dumpContent,"FILE_INFO");
+          strcat(dumpContent,"FILE_INFO\n");
           write(sock,dumpContent,strlen(dumpContent));
           char FINISH[7];
           read(sock,FINISH,6);
@@ -435,7 +435,7 @@ void *connection_handler(void *socket_desc){
           int outer_count = 0;
           for (; outer_count < entire_index; outer_count++){
             if(outer_count%15==0){
-              dumpContent=malloc(2048*5);
+              dumpContent=malloc(6000);
               strcpy(dumpContent,"");
             }
             for (; col_count < 28; col_count++){
@@ -450,7 +450,7 @@ void *connection_handler(void *socket_desc){
             col_count = 0;
             if((outer_count+1)==entire_index){
               //printf("rowindex:%d , %s\n",outer_count,dumpContent );
-              strcat(dumpContent,"FILE_INFO");
+              strcat(dumpContent,"FILE_INFO\n");
               write(sock,dumpContent,strlen(dumpContent));
               char FIN[7];
               read(sock,FIN,6);
@@ -458,7 +458,7 @@ void *connection_handler(void *socket_desc){
             }
             if((outer_count+1)%15==0){
               //printf("rowindex:%d , %s\n",outer_count,dumpContent );
-              strcat(dumpContent,"FILE_INFO");
+              strcat(dumpContent,"FILE_INFO\n");
               write(sock,dumpContent,strlen(dumpContent));
               char FIN[7];
               read(sock,FIN,6);
