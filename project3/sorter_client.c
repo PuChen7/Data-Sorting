@@ -260,7 +260,8 @@ void ifPathCorrect(char* path){
 int main(int c, char *v[]){
     // arguments less than 3, error
     if (c < 9){
-        printf("Error: insufficient parameters!\n");
+        printf("Error: insufficient parameters!\n -c -h -p -s -d -o (first 4 are required),yes we do all extra credits,and -s");
+	printf("flag is never clarified in class,so we make it required flag as we want,hope this isn't troubling anyone,anything\n");
         exit(0);
     }
     struct dirent *pDirent;

@@ -89,7 +89,7 @@ int available_socket(){
 
 void *send_request(char* send_file_path)
 {
-    pthread_mutex_lock(&sort_lock);
+
     char* tmp_path=strdup(send_file_path);
 
     FILE    *input_file = fopen(tmp_path, "r");
@@ -100,7 +100,7 @@ void *send_request(char* send_file_path)
         fclose(input_file);
         return NULL;
     }
-
+    pthread_mutex_lock(&sort_lock);
     int currentSocketIndex =available_socket();
     int currentSocket = socketpool[currentSocketIndex];
     sentCounter++;
