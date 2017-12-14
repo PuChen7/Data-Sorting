@@ -454,6 +454,9 @@ void *connection_handler(void *socket_desc){
               write(sock,dumpContent,strlen(dumpContent));
               char FIN[7];
               read(sock,FIN,6);
+		  write(sock,"FINISH",strlen("FINISH"));
+		  char FIN[7];
+		  read(sock,FIN,6);
               break;
             }
             if((outer_count+1)%2==0){
@@ -466,9 +469,7 @@ void *connection_handler(void *socket_desc){
             }
           }
           free(dumpContent);
-          write(sock,"FINISH",strlen("FINISH"));
-          char FIN[7];
-          read(sock,FIN,6);
+
 
           int icount = 0;
           int j = 0;
