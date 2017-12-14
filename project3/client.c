@@ -387,7 +387,7 @@ int main(int c, char *v[]){
     char server_message[2048*5];
     pthread_mutex_lock(&sort_lock);
     while( (read_size = read(socketpool[available_Socket] , server_message , 2048*5 )) > 0 ){
-      // printf("%s\n",server_message );
+      printf("%s\n",server_message );
       if(strstr(server_message,"FILE_INFO")!=NULL){
         char* p = strstr(server_message,"FILE_INFO");
         *p = 0;
