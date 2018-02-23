@@ -20,10 +20,15 @@ If it requests sorting, then it will perform the sort and store the results.
 
 ## Running the program
 `./sort_client -c type -h host_name -p 12345` -d thisdir/thatdir -o anotherdir
+
     * `-c` indicates the sorting type. 
+    
     * `-h` indicates the hostname of the server.
+    
     * `-p` indicates the port number.
+    
     * `-d` indicates the starting directory.The default behavior will search the current directory.
+    
     * `-o` indicates the output directory. The default behavior will be to output in the same directory as the source directory.
 
 The server has only one parameter: ‘-p’, and is required for operation:
