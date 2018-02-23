@@ -32,4 +32,5 @@ If it requests sorting, then it will perform the sort and store the results.
     * -o indicates the output directory. The default behavior will be to output in the same directory as the source directory.
 
 The server has only one parameter: ‘-p’, and is required for operation:
+
 `./sorter_server -p 12345`
